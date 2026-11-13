@@ -87,3 +87,7 @@ CPU-only, stdlib. Идентичность mirror-TS `mirror(S) == ideal(2S)` з
 - Raw-логи (`experiments/*/raw/*.txt`) содержат абсолютные пути из вывода llama.cpp — это измерительное свидетельство, они сохраняются как есть.
 - E3 v1/v2 — невалидные бенчмарки попыток tensor parallelism; сохранены как артефакты (`v1-invalid-bench/`).
 - Журналы проекта: `ROADMAP.md` (A-xx) и `CONCLUSIONS.md` (C-xx).
+
+## Лицензия
+
+Код и данные — [MIT](LICENSE).
