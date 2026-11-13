@@ -1,7 +1,7 @@
 {
-  "experiment": "E2 — prefill TPS + влияние KV-кэша на шину при длинных контекстах S=65k/131k/262k, один GPU (CUDA1) (ROADMAP блоки 1+7)",
+  "experiment": "E2 — prefill TPS + impact of the KV cache on the bus at long contexts S=65k/131k/262k, single GPU (CUDA1) (ROADMAP blocks 1+7)",
   "date": "2026-10-23",
-  "status": "prepared: код и сетка готовы; прогон не выполнялся — ждёт запуска пользователем (нужна свободная GPU1)",
+  "status": "prepared: code and grid ready; run not executed — waiting for user launch (GPU1 must be free)",
   "runner": {
     "binary": "G:/uni/AoI/runner-cuda/llama-bench.exe",
     "build": "llama.cpp b11819 (v0.7.0-dev), win-x64, CUDA 13.4 prebuilt (commit 0693dbfb9)",
@@ -11,12 +11,12 @@
     "gguf": "G:/lmstudio/lmstudio-community/gemma-4-12B-it-GGUF/gemma-4-12B-it-Q4_K_M.gguf",
     "file_bytes": 7381384864,
     "arch": "L=48; 40 local SWA layers (window=1024, kv_dim=2048) + 8 global full-attention layers blk.5/11/../47 (kv_dim=512); vocab=262144, lm_head tied",
-    "note": "~7.05 GB; S* ≈ 412k > context_length 262144 — весь диапазон E2 ниже точки, где KV перевешивает веса (E1/C-11)"
+    "note": "~7.05 GB; S* ≈ 412k > context_length 262144 — the whole E2 range is below the point where KV outweighs weights (E1/C-11)"
   },
   "gpu": {
     "device": "RTX 5060 Ti #2 (non-display card), CUDA device name CUDA1",
     "vram_gib": 16.28,
-    "requirement": "перед прогоном закрыть ВТОРОЙ инстанс LM Studio (~10.7 GiB на GPU1/CUDA1) — иначе OOM на S>=131k; инстанс бэкенда чата живёт на GPU0 и этому прогону не мешает"
+    "requirement": "close the SECOND LM Studio instance before running (~10.7 GiB on GPU1/CUDA1) — otherwise OOM at S>=131k; the chat-backend instance lives on GPU0 and does not interfere with this run"
   },
   "grid": {
     "context_sizes_S": [65536, 131072, 262144],
@@ -24,40 +24,40 @@
     "cells": "12 = 6 prefill + 6 decode",
     "prefill_command_template": "llama-bench.exe -m <model> -p {S} -n 0 -r R -dev CUDA1 -ctk {kv} -ctv {kv}",
     "decode_command_template": "llama-bench.exe -m <model> -p 0 -n 64 -d {S} -r 2 -dev CUDA1 -ctk {kv} -ctv {kv}",
-    "repetitions": "prefill: r=2 для S<=131072, r=1 на 262144; decode: r=2 везде",
-    "ctx_sizing": "флага -c у b11819 нет: ctx авто = n_prompt + n_gen (+n_depth); prefill-ячейка ctx=S (KV растёт до полного размера в таймируемом окне), decode-ячейка ctx=S+64"
+    "repetitions": "prefill: r=2 for S<=131072, r=1 at 262144; decode: r=2 everywhere",
+    "ctx_sizing": "b11819 has no -c flag: ctx auto = n_prompt + n_gen (+n_depth); prefill cell ctx=S (KV grows to full size inside the timed window), decode cell ctx=S+64"
   },
   "metrics": {
-    "primary_prefill": "Чистый prefill TPS: строка `pp{S}` (t/s ± std). KV пишется в таймируемое окно — метрика ловит влияние KV на шину при prefill",
-    "primary_decode": "Чистый decode TPS после префикса S: строка `tg64 @ d{S}`; depth-префикс вне окна тайминга (механизм E1, -d/--n-depth)",
-    "why_pp_row_valid_here": "В E1 комбо-строка pp+tg была непригодна как decode-метрика; здесь pp-строка сама по себе и есть целевая метрика prefill",
-    "theory_ref": "inference_math.prefill_flops (тесты 14/14): @65536 ≈ 2.04e15, @131072 = 5_200_878_642_397_184 FLOP (точно), @262144 ≈ 1.49e16; tps_prefill_ceiling(tflops_eff) — compute-bound сторона roofline для сравнения с замером"
+    "primary_prefill": "Pure prefill TPS: the `pp{S}` row (t/s ± std). KV is written inside the timed window — the metric captures KV's impact on the bus during prefill",
+    "primary_decode": "Pure decode TPS after an S prefix: the `tg64 @ d{S}` row; depth prefix outside the timing window (E1 mechanism, -d/--n-depth)",
+    "why_pp_row_valid_here": "In E1 the combined pp+tg row was unsuitable as a decode metric; here the pp row itself is the target prefill metric",
+    "theory_ref": "inference_math.prefill_flops (tests 14/14): @65536 ≈ 2.04e15, @131072 = 5_200_878_642_397_184 FLOP (exact), @262144 ≈ 1.49e16; tps_prefill_ceiling(tflops_eff) — compute-bound side of the roofline for comparison with the measurement"
   },
   "vram": {
-    "f16_S262k_total_gib": "~12.0-12.5 (веса ~7.05 + KV глобальных слоёв ~4.3 GiB + SWA-окно константа ~0.34)",
-    "q8_0_note": "KV q8_0 вдвое меньше на линейной части — запас больше"
+    "f16_S262k_total_gib": "~12.0-12.5 (weights ~7.05 + global-layer KV ~4.3 GiB + SWA window constant ~0.34)",
+    "q8_0_note": "q8_0 KV halves the linear part — more headroom"
   },
-  "time_estimate": "~1-2 часа (оценка: prefill_flops при tflops_eff≈30 TFLOPS даёт ~68 s/rep @65k, ~173 s @131k, ~497 s @262k; decode-ячейки добавляют свой prefill в тайминг вне окна — но сам прогон их тоже делает)",
+  "time_estimate": "~1-2 hours (estimate: prefill_flops at tflops_eff≈30 TFLOPS gives ~68 s/rep @65k, ~173 s @131k, ~497 s @262k; decode cells add their own prefill to the timing outside the window — but the run does them too)",
   "launch_protocol": {
     "preflights_in_bat": [
-      "A: llama-bench --version + findstr CUDA (без VRAM)",
-      "B: -m фейковая модель -dev CUDA1 → 'invalid device' = fail (~2 c, без VRAM)",
-      "C: одна реальная prefill-ячейка f16 S=1024 r=1 — findstr 'pp1024'; проверяет формат pp-строки и загрузку модели на CUDA1 (короткий VRAM)"
+      "A: llama-bench --version + findstr CUDA (no VRAM)",
+      "B: -m fake model -dev CUDA1 → 'invalid device' = fail (~2 s, no VRAM)",
+      "C: one real prefill cell f16 S=1024 r=1 — findstr 'pp1024'; checks the pp row format and model loading on CUDA1 (short VRAM spike)"
     ],
     "abort_on_preflight": true,
-    "logging": "raw/run_log.txt: timestamp + точная командная строка + exit-код каждой ячейки; raw/pp_{kv}_S{S}.txt и tg_d{S}_{kv}.txt — полный вывод ячеек",
+    "logging": "raw/run_log.txt: timestamp + exact command line + exit code of every cell; raw/pp_{kv}_S{S}.txt and tg_d{S}_{kv}.txt — full cell output",
     "user_steps": [
-      "1. Закрыть второй инстанс LM Studio (тот, что держит ~10.7 GiB на GPU1)",
-      "2. Двойной клик по experiments/E2-long-context-prefill/run_e2.bat",
-      "3. Дождаться 'E2 done' в консоли (оценка 1-2 ч)"
+      "1. Close the second LM Studio instance (the one holding ~10.7 GiB on GPU1)",
+      "2. Double-click experiments/E2-long-context-prefill/run_e2.bat",
+      "3. Wait for 'E2 done' in the console (estimate 1-2 h)"
     ],
-    "note": "QWEN_NO_PAUSE=1 отключает pause; OOM-ячейка не роняет сетку — bat продолжает, exit-код и текст OOM идут в run_log/raw"
+    "note": "QWEN_NO_PAUSE=1 disables pause; an OOM cell does not drop the grid — bat continues, exit code and OOM text go to run_log/raw"
   },
   "deliverables_5_files_protocol": [
-    "config.json (этот файл)",
+    "config.json (this file)",
     "raw/ (pp_{kv}_S{S}.txt + tg_d{S}_{kv}.txt + run_log.txt + preflight_*.txt)",
-    "table.md (таблица: S × kv → pp t/s ± std и tg64 @ d{S} TPS ± std, OOM-ячейки помечены)",
-    "plot.png (pp TPS(S) по 2 квантованиям + теоретический потолок prefill_flops; decode TPS(S))",
-    "conclusion.md (вывод: KV на шине при prefill/decode на длинных S; C-xx в CONCLUSIONS.md после замера)"
+    "table.md (table: S × kv → pp t/s ± std and tg64 @ d{S} TPS ± std, OOM cells marked)",
+    "plot.png (pp TPS(S) for 2 quantizations + theoretical prefill_flops ceiling; decode TPS(S))",
+    "conclusion.md (findings: KV on the bus during prefill/decode at long S; C-xx in CONCLUSIONS.md after measurement)"
   ]
 }

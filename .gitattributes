@@ -1,4 +1,4 @@
-# Нормализация line endings для всего репо; launchers — всегда CRLF (Windows cmd), бинарники — без преобразований
+# Line-ending normalization across the repo; launchers are always CRLF (Windows cmd), binaries untouched
 * text=auto
 *.bat text eol=crlf
 *.png binary

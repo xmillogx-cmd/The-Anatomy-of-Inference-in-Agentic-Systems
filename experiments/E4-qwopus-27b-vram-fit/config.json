@@ -1,24 +1,24 @@
 {
-  "experiment": "E4 — Qwopus3.8-27B-Coder-Flash: влезает/не влезает на 2× RTX 5060 Ti 16 GB",
+  "experiment": "E4 — Qwopus3.8-27B-Coder-Flash: fits / does not fit on 2× RTX 5060 Ti 16 GB",
   "date": "2026-11-12",
   "runs": {
     "main": {
-      "launcher": "run_e4.bat (копия preprint/code/launchers/run_e4.bat)",
+      "launcher": "run_e4.bat",
       "window": "12.11.2026 5:24:29 — 6:05:05",
       "log_tag": "[E4]"
     },
     "q4_supplement": {
-      "launcher": "run_e4_q4.bat (копия preprint/code/launchers/run_e4_q4.bat)",
+      "launcher": "run_e4_q4.bat",
       "window_start": "12.11.2026 12:49:34",
       "log_tag": "[E4q4]",
-      "note": "догоняет q4_0-ячейки грида (в основном прогоне были только f16/q8_0)"
+      "note": "fills in the q4_0 cells of the grid (the main run had only f16/q8_0)"
     }
   },
   "model": {
     "path": "G:\\lmstudio\\bartowski\\Jackrong_Qwopus3.8-27B-Coder-Flash-GGUF\\Jackrong_Qwopus3.8-27B-Coder-Flash-Q4_K_M.gguf",
     "size_bytes": 17442401824,
     "size_gib": 16.2,
-    "mmproj": "mmproj_f16.gguf (927 MB) — не используется в текстовом бенче",
+    "mmproj": "mmproj_f16.gguf (927 MB) — not used in the text bench",
     "arch": {
       "name": "qwen35",
       "type": "hybrid (full-attn + recurrent/SSM)",
@@ -33,21 +33,21 @@
       "ctx_native": 262144,
       "nextn_predict_layers": 1,
       "notes": [
-        "blk.64 = nextn MTP слой — билд его игнорирует (~239 MB весов offloaded, warning 'model has unused tensor blk.64.*')",
-        "KV растёт только на full-attn слоях: 17 × 4 heads × 256 dim × 2(K+V) = 69632 B/pos f16; q8_0 — половина, q4_0 — четверть",
-        "SSM-состояние recurrent-слоёв фиксированное (не растёт с контекстом)"
+        "blk.64 = nextn MTP layer — the build ignores it (~239 MB of weights offloaded, warning 'model has unused tensor blk.64.*')",
+        "KV grows only on full-attn layers: 17 × 4 heads × 256 dim × 2(K+V) = 69632 B/pos f16; q8_0 — half, q4_0 — a quarter",
+        "SSM state of recurrent layers is fixed (does not grow with context)"
       ]
     }
   },
   "runner": {
     "path": "G:\\uni\\AoI\\runner-cuda",
-    "version": "llama.cpp b11819 + mirror-KV патч (CUDA-13.4 build)",
+    "version": "llama.cpp b11819 + mirror-KV patch (CUDA-13.4 build)",
     "auto_fit": true,
-    "auto_fit_warning": "common_fit_params включён: при нехватке VRAM вместо OOM — тихий partial-offload в RAM с exit=0 («exit=0-ловушка», строка 1)"
+    "auto_fit_warning": "common_fit_params enabled: on VRAM shortage instead of OOM — silent partial-offload to RAM with exit=0 ('exit=0 trap', line 1)"
   },
   "hardware": {
     "gpus": "2× NVIDIA RTX 5060 Ti 16 GB (CUDA0, CUDA1)",
-    "preflight_gate": "обе карты < 2 GiB занято перед стартом (gpu_free.txt, gpu_free_q4.txt)"
+    "preflight_gate": "both cards < 2 GiB used before start (gpu_free.txt, gpu_free_q4.txt)"
   },
   "prompts": {
     "dir": "G:\\uni\\AoI\\experiments\\E3-multi-gpu-tp-ts\\raw\\prompts",
@@ -56,7 +56,7 @@
       "prompt_131072.txt": 131071,
       "prompt_262144.txt": 262143
     },
-    "note": "переиспользованы из E3 (размер ~0.998× от gemma-4); токенизация Qwopus подтверждена llama-tokenize probe"
+    "note": "reused from E3 (size ~0.998× of gemma-4); Qwopus tokenization confirmed by the llama-tokenize probe"
   },
   "common_flags": ["-n", "64", "--ignore-eos", "--perf", "--no-cnv", "--no-display-prompt"],
   "cells": [
@@ -70,10 +70,10 @@
     {"id": 8, "name": "PP grid S=262k q8_0", "flags": "-dev CUDA0,CUDA1 -sm layer -c 262400 -ctk q8_0 -ctv q8_0", "S": 262144, "kv": "q8_0", "evidence": "raw/e4_pp_s262144_q8_0.txt"},
     {"id": 9, "name": "PP grid S=262k q4_0 (supplement)", "flags": "-dev CUDA0,CUDA1 -sm layer -c 262400 -ctk q4_0 -ctv q4_0", "S": 262144, "kv": "q4_0", "evidence": "raw/e4_pp_s262144_q4_0.txt"}
   ],
-  "context_padding_rule": "-c = S + 256 (запас под decode-токены; llama.cpp предупреждает 'n_ctx_seq > n_ctx_train' для 262k — не фатально)",
-  "preflight_A": {"cmd": "llama-completion -dev none (CPU) с prompt_512", "purpose": "arch qwen35 читается раннером", "evidence": "raw/preflight_cpu_smoke.txt"},
+  "context_padding_rule": "-c = S + 256 (headroom for decode tokens; llama.cpp warns 'n_ctx_seq > n_ctx_train' at 262k — not fatal)",
+  "preflight_A": {"cmd": "llama-completion -dev none (CPU) with prompt_512", "purpose": "arch qwen35 is read by the runner", "evidence": "raw/preflight_cpu_smoke.txt"},
   "caveats": [
-    "одиночные прогоны: каждая ячейка запущена один раз, decode-выборка 63 токена — шум ±несколько %",
-    "%TIME% внутри FOR-блоков bat схлопнут на момент входа в итерацию (артефакт парсинга cmd) — точные времена берутся из perf-строк evidence-файлов"
+    "single runs: each cell launched once, decode sample of 63 tokens — noise ±a few %",
+    "%TIME% inside FOR blocks of the bat collapses at iteration entry (cmd parsing artifact) — exact times are taken from the perf lines in the evidence files"
   ]
 }

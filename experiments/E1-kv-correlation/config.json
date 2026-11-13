@@ -1,46 +1,46 @@
 {
-  "experiment": "E1 — корреляция «размер KV-кэша S × квантование KV → decode TPS» + точка, где KV становится проблемой (ROADMAP блоки 3+7)",
+  "experiment": "E1 — correlation 'KV cache size S × KV quantization → decode TPS' + the point where KV becomes a problem (ROADMAP blocks 3+7)",
   "date": "2026-10-22",
-  "status": "done: прогон выполнен пользователем 23.10.2026 (~5 мин), 18/18 exit=0; на месте все 5 файлов (raw/, table.md, plot.png, conclusion.md); C-10 исправлен + C-11/C-12",
+  "status": "done: run executed by user on 2026-10-23 (~5 min), 18/18 exit=0; all 5 files in place (raw/, table.md, plot.png, conclusion.md); C-10 corrected + C-11/C-12",
   "runner": {
     "binary": "G:/uni/AoI/runner-cuda/llama-bench.exe",
     "build": "llama.cpp b11819 (v0.7.0-dev), win-x64, CUDA 13.4 prebuilt (commit 0693dbfb9)",
-    "driver": "NVIDIA 617.42 / UMD 13.4 (обновлён пользователем 2026-10-22; совместим с prebuilt cuda-13.4)"
+    "driver": "NVIDIA 617.42 / UMD 13.4 (updated by user on 2026-10-22; compatible with the cuda-13.4 prebuilt)"
   },
   "model": {
     "gguf": "G:/lmstudio/lmstudio-community/gemma-4-12B-it-GGUF/gemma-4-12B-it-Q4_K_M.gguf",
     "file_bytes": 7381384864,
     "arch": "L=48; 40 local SWA layers (sliding_window=1024, kv_heads=8 -> kv_dim=2048) + 8 global full-attention layers blk.5/11/../47 (kv_heads=1 -> kv_dim=512); vocab=262144, lm_head tied",
-    "note": "~7.05 GB; единственный локальный GGUF; влезает на один RTX 5060 Ti 16 GiB"
+    "note": "~7.05 GB; the only local GGUF; fits on a single RTX 5060 Ti 16 GiB"
   },
   "gpu": {
     "device": "RTX 5060 Ti #2 (non-display card), CUDA device name CUDA1",
     "vram_gib": 16,
-    "note": "-dev принимает имена CUDA0/CUDA1 (help-текст dev0/dev1 у b11819 устарел: флаг резолвится через ggml_backend_dev_by_name). LM Studio закрывается перед прогоном — он занимает VRAM и обслуживает бэкенд чата."
+    "note": "-dev accepts the names CUDA0/CUDA1 (the dev0/dev1 help text in b11819 is outdated: the flag resolves via ggml_backend_dev_by_name). LM Studio must be closed before running — it occupies VRAM and serves the chat backend."
   },
   "grid": {
     "context_sizes_S": [1024, 2048, 4096, 8192, 16384, 32768],
     "kv_quants": ["f16", "q8_0", "q4_0"],
     "cells": 18,
     "command_template": "llama-bench.exe -m <model> -p 0 -n 64 -d {S} -r 3 -dev CUDA1 -ctk {kv} -ctv {kv}",
-    "ctx_sizing": "флага -c у b11819 нет: ctx авто = n_prompt + n_gen + n_depth = S+64 (llama-bench.cpp строка ~1308); depth-префикс делается вне окна тайминга"
+    "ctx_sizing": "b11819 has no -c flag: ctx auto = n_prompt + n_gen + n_depth = S+64 (llama-bench.cpp line ~1308); the depth prefix is built outside the timing window"
   },
   "metrics": {
-    "primary": "Чистый decode TPS после префикса длиной S: строка `tg64 @ d{S}` в таблице (t/s ± std, r=3). Механизм — `-d/--n-depth`: depth-токены prefill'ятся вне замера (llama_memory_clear + restore cstate/test_prompt, b11819 строки 2447-2514), тайминг стартует после; tg64 = 64 decode-токена. Строк на ячейку ровно одна.",
-    "why_not_pp_plus_tg": "t/s комбо-строки pp{S}+tg{n} = (n_prompt+n_gen)/t_total: на больших S доминирует prefill → строка меряет скорость промпта, а не decode TPS; как метрика E1 непригодна (обнаружено по исходнику после abort'а 23:29).",
-    "secondary": "exit-код ячейки + текст OOM в raw-файле = данные границы «когда KV становится проблемой»"
+    "primary": "Pure decode TPS after a prefix of length S: the `tg64 @ d{S}` row in the table (t/s ± std, r=3). Mechanism — `-d/--n-depth`: depth tokens are prefilled outside the measurement (llama_memory_clear + restore cstate/test_prompt, b11819 lines 2447-2514), timing starts afterwards; tg64 = 64 decode tokens. Exactly one row per cell.",
+    "why_not_pp_plus_tg": "t/s of the combined pp{S}+tg{n} row = (n_prompt+n_gen)/t_total: at large S prefill dominates → the row measures prompt speed, not decode TPS; unsuitable as an E1 metric (discovered from source after the 23:29 abort).",
+    "secondary": "cell exit code + OOM text in the raw file = boundary data for 'when KV becomes a problem'"
   },
   "measured_oom_boundary_f16": {
-    "result": "OOM не было нигде, включая f16 @ S=32768 (прогон 2026-10-23)",
-    "S_32768": "KV f16 ≈ 832 MiB: линейно в S растут только 8 глобальных слоёв (s_grow = 16,384 B/позицию); окно SWA 40 локальных слоёв ограничено min(S,1024) — b11819 аллоцирует ring-буфер",
-    "note": "старое ожидание OOM базировалось на инвертированной архитектуре (C-10, исправлено 2026-10-23)"
+    "result": "No OOM anywhere, including f16 @ S=32768 (run of 2026-10-23)",
+    "S_32768": "KV f16 ≈ 832 MiB: only the 8 global layers grow linearly with S (s_grow = 16,384 B/position); the SWA window of the 40 local layers is bounded by min(S,1024) — b11819 allocates a ring buffer",
+    "note": "the earlier OOM expectation was based on an inverted architecture (C-10, corrected 2026-10-23)"
   },
   "kv_elems_per_token": {
-    "note": "линейная часть = только 8 глобальных full-слоёв: s = 8·(2·512)·e → f16 = 16,384 B/позицию; q8_0 (e=34/32) = 8,704; q4_0 (e=18/32) = 4,608 (см. inference_math.py)",
+    "note": "linear part = the 8 global full layers only: s = 8·(2·512)·e → f16 = 16,384 B/position; q8_0 (e=34/32) = 8,704; q4_0 (e=18/32) = 4,608 (see inference_math.py)",
     "f16_global_layers_B_per_token": 16384,
     "q8_0_global_layers_B_per_token": 8704,
     "q4_0_global_layers_B_per_token": 4608,
-    "swa_note": "SWA-окно (40 локальных слоёв, окно 1024) — константа c_swa: f16 = 3.355e8 B/токен; q8_0 = 1.783e8; q4_0 = 9.437e7"
+    "swa_note": "SWA window (40 local layers, window 1024) — constant c_swa: f16 = 3.355e8 B/token; q8_0 = 1.783e8; q4_0 = 9.437e7"
   },
   "fit_model": {
     "formula": "TPS_q(S) = BW_eff / (W + s_q*S + c_q)",
@@ -48,28 +48,28 @@
     "s_f16_B": 16384,
     "s_q8_0_B": 8704,
     "s_q4_0_B": 4608,
-    "measured_fit": "y=1/TPS=a+b·S (23.10.2026): f16 b ↔ 16,384 B/позицию (×1.00 к теории, R²=0.998); q8_0 эффективные 30,322 B (теория ×3.48); q4_0 эффективные 26,994 B (×5.86) — см. conclusion.md"
+    "measured_fit": "y=1/TPS=a+b·S (2026-10-23): f16 b ↔ 16,384 B/position (×1.00 vs theory, R²=0.998); q8_0 effective 30,322 B (theory ×3.48); q4_0 effective 26,994 B (×5.86) — see conclusion.md"
   },
   "launch_protocol": {
     "preflights_in_bat": [
-      "A: llama-bench --version + findstr CUDA — раннер жив, CUDA backend загружен (без VRAM)",
-      "B: -m фейковая модель -dev CUDA1 → строка 'invalid device' = fail; ловит опечатку в имени устройства (~2 c, без VRAM)",
-      "C: одна реальная ячейка f16 S=1024 r=1 — findstr 'tg64 @ d1024'; 1-я точка данных + проверка что строка реально парсится"
+      "A: llama-bench --version + findstr CUDA — runner alive, CUDA backend loaded (no VRAM)",
+      "B: -m fake model -dev CUDA1 → 'invalid device' line = fail; catches a typo in the device name (~2 s, no VRAM)",
+      "C: one real cell f16 S=1024 r=1 — findstr 'tg64 @ d1024'; first data point + check that the row actually parses"
     ],
     "abort_on_preflight": true,
-    "logging": "raw/run_log.txt: timestamp + точная командная строка + exit-код каждой ячейки; raw/<kv>_S<S>.txt — полный вывод каждой ячейки (включая текст OOM)",
+    "logging": "raw/run_log.txt: timestamp + exact command line + exit code of every cell; raw/<kv>_S<S>.txt — full output of every cell (including OOM text)",
     "user_steps": [
-      "1. Закрыть LM Studio (бэкенд чата; VRAM)",
-      "2. Двойной клик по experiments/E1-kv-correlation/run_e1.bat",
-      "3. Дождаться 'E1 done' в консоли (измерено ~5 мин на 18 ячеек, r=3; прогон выполнен 2026-10-23)"
+      "1. Close LM Studio (chat backend; VRAM)",
+      "2. Double-click experiments/E1-kv-correlation/run_e1.bat",
+      "3. Wait for 'E1 done' in the console (measured ~5 min for 18 cells, r=3; run executed on 2026-10-23)"
     ],
-    "note": "QWEN_NO_PAUSE=1 отключает pause для неинтерактивного запуска; OOM-ячейка не роняет сетку — bat продолжает."
+    "note": "QWEN_NO_PAUSE=1 disables pause for unattended runs; an OOM cell does not drop the grid — bat continues."
   },
   "deliverables_5_files_protocol": [
-    "config.json (этот файл)",
-    "raw/ (сырые данные: <kv>_S<S>.txt + run_log.txt + preflight_*.txt)",
-    "table.md (таблица: S × kv → TPS ± std, OOM-ячейки помечены)",
-    "plot.png (графики TPS(S) по 3 квантованиям + fit)",
-    "conclusion.md (вывод: где KV становится проблемой; C-xx в CONCLUSIONS.md после замера)"
+    "config.json (this file)",
+    "raw/ (raw data: <kv>_S<S>.txt + run_log.txt + preflight_*.txt)",
+    "table.md (table: S × kv → TPS ± std, OOM cells marked)",
+    "plot.png (TPS(S) curves for the 3 quantizations + fit)",
+    "conclusion.md (findings: where KV becomes a problem; C-xx in CONCLUSIONS.md after measurement)"
   ]
 }

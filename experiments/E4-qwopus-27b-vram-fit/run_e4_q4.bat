@@ -1,10 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
-REM E4q4 — дополнение к эксперименту E4: недостающие ячейки грида с KV q4_0 (PP-режим).
-REM В run_e4.bat был только f16/q8_0; здесь доводим тройку для сопоставления с E1 C-12.
-REM Та же модель/флаги, что и в основном прогоне: Qwopus3.8-27B-Coder-Flash-Q4_K_M, -dev CUDA0,CUDA1 -sm layer, -n 64 --ignore-eos.
-REM VRAM: закрыть ОБА инстанса LM Studio перед запуском (гейт preflight B).
-REM OOM в ячейке = валидная точка «не влезает при этом контексте», не abort.
+REM E4q4 — supplement to experiment E4: the missing grid cells with KV q4_0 (PP mode).
+REM run_e4.bat had only f16/q8_0; here we complete the trio for comparison with E1 C-12.
+REM Same model/flags as the main run: Qwopus3.8-27B-Coder-Flash-Q4_K_M, -dev CUDA0,CUDA1 -sm layer, -n 64 --ignore-eos.
+REM VRAM: close BOTH LM Studio instances before running (preflight B gate).
+REM OOM in a cell = a valid "does not fit at this context" data point, not an abort.
 
 REM Dynamic paths (any OS): AOI_ROOT is found by walking up from this file until README.md appears.
 REM Env overrides: AOI_RUNNER = dir with llama-completion.exe; GGUF_MODEL = path to the .gguf file;
@@ -45,7 +45,7 @@ nvidia-smi --query-gpu=index,memory.used --format=csv,noheader,nounits > "%RAW%\
 python -c "import sys;d=open(r'%RAW%\gpu_free_q4.txt',encoding='utf-8',errors='replace').read().strip();rows=[l.split(',') for l in d.splitlines() if ',' in l];vals=[int(r[1]) for r in rows[:2]];ok=len(vals)==2 and max(vals)<2048;print('GPU used MiB:',vals);sys.exit(0 if ok else 1)" || goto :fail
 echo [E4q4] %DATE% %TIME% preflight B OK: both GPUs free >> "%RAW%\run_log.txt"
 
-REM ---- grid q4_0: S=131072 и S=262144, PP (-sm layer); та же семантика точек данных, что в E4 ----
+REM ---- grid q4_0: S=131072 and S=262144, PP (-sm layer); same data-point semantics as in E4 ----
 for %%S in (131072 262144) do (
     set /a CPAD=%%S+256
     echo [E4q4] %DATE% %TIME% GRID mode=pp S=%%S kv=q4_0 CMD: llama-completion -dev CUDA0,CUDA1 -sm layer -ctk q4_0 -ctv q4_0 -n 64 --ignore-eos >> "%RAW%\run_log.txt"

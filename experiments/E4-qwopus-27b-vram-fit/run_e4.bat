@@ -1,13 +1,13 @@
 @echo off
 setlocal enabledelayedexpansion
-REM E4 — Qwopus3.8-27B-Coder-Flash-Q4_K_M (arch qwen35, hybrid: 65 блоков, full-attn каждый 4-й слой, KV только на них):
-REM   влезает/не влезает на одну карту 16 GB и зачем нужен параллелизм когда VRAM не хватает. AoI roadmap A7.
+REM E4 — Qwopus3.8-27B-Coder-Flash-Q4_K_M (arch qwen35, hybrid: 65 blocks, full-attn every 4th layer, KV only on those):
+REM   fits / does not fit on a single 16 GB card and why parallelism is needed when VRAM runs out. AoI roadmap A7.
 REM Model: Jackrong_Qwopus3.8-27B-Coder-Flash-Q4_K_M.gguf by bartowski (17,442,401,824 B = 16.2 GiB weights); GGUF_MODEL env var points to the file.
-REM runner-cuda b11819+mirror-KV: поддержка arch qwen35 подтверждена (llama-tokenize probe 2026-11-12: prompt_512 -> 511 токенов).
-REM Промпты переиспользуются из E3 (токенизатор другой: ~0.998x от gemma-4; точные размеры видны в perf-строках «/ N runs»).
-REM VRAM: закрыть ОБА инстанса LM Studio перед запуском (GPU0 инстанс обслуживает чат-сессию; GPU1 держит ~10.7 GiB).
-REM Preflight A — CPU-only (безопасно тестировать во время чата); B-G требуют обе карты свободные.
-REM SG-пробник и TS-пробник ПАДЕНИЯ НЕ ОЗНАЧАЮТ ABORT: ожидаемый исход фиксируется как данные в run_log.txt.
+REM runner-cuda b11819+mirror-KV: arch qwen35 support confirmed (llama-tokenize probe 2026-11-12: prompt_512 -> 511 tokens).
+REM Prompts reused from E3 (different tokenizer: ~0.998x of gemma-4; exact sizes visible in the perf lines '/ N runs').
+REM VRAM: close BOTH LM Studio instances before running (the GPU0 instance serves the chat session; GPU1 holds ~10.7 GiB).
+REM Preflight A — CPU-only (safe to test during a chat); B-G require both cards free.
+REM SG probe and TS probe FAILURES DO NOT MEAN ABORT: the expected outcome is logged as data in run_log.txt.
 REM On ANY preflight failure: run_log.txt gets the failing step name + last 12 lines of its evidence file, echoed to console before pause.
 
 REM Dynamic paths (any OS): AOI_ROOT is found by walking up from this file until README.md appears.
@@ -78,7 +78,7 @@ findstr /c:"prompt eval time" "%RAW%\preflight_pp_smoke.txt" >nul || goto :fail
 findstr /c:"eval time" "%RAW%\preflight_pp_smoke.txt" >nul || goto :fail
 echo [E4] %DATE% %TIME% preflight C OK: PP smoke both cards (also the short-context tg/pp baseline) >> "%RAW%\run_log.txt"
 
-REM ---- grid part 1: S=131072, PP (-sm layer), kv f16/q8_0; OOM here = valid «не влезает при этом контексте» data point (no abort) ----
+REM ---- grid part 1: S=131072, PP (-sm layer), kv f16/q8_0; OOM here = a valid "does not fit at this context" data point (no abort) ----
 for %%Q in (f16 q8_0) do (
     echo [E4] %DATE% %TIME% GRID mode=pp S=131072 kv=%%Q CMD: llama-completion -dev CUDA0,CUDA1 -sm layer -ctk %%Q -ctv %%Q -n 64 --ignore-eos >> "%RAW%\run_log.txt"
     "%RUNNER%\llama-completion.exe" -m "%MODEL%" -f "%PROMPTS%\prompt_131072.txt" -n 64 --ignore-eos -c 131328 --perf -dev CUDA0,CUDA1 -sm layer -ctk %%Q -ctv %%Q -no-cnv --no-display-prompt > "%RAW%\e4_pp_s131072_%%Q.txt" 2>&1
@@ -95,7 +95,7 @@ for %%Q in (f16 q8_0) do (
 )
 
 REM ---- TS probe: -sm tensor -ts 1,1 S=512 f16; expected crash on hybrid arch (C-17 pattern for gemma-4):
-REM      verdict logged as data, NO abort. Answers «какой параллелизм работает» ----
+REM      verdict logged as data, NO abort. Answers which parallelism works on this arch ----
 set "TSFILE=%RAW%\e4_ts_s512_f16.txt"
 echo [E4] %DATE% %TIME% TS probe CMD: llama-completion -dev CUDA0,CUDA1 -sm tensor -ts 1,1 -c 768 -n 64 >> "%RAW%\run_log.txt"
 "%RUNNER%\llama-completion.exe" -m "%MODEL%" -f "%PROMPTS%\prompt_512.txt" -n 64 --ignore-eos -c 768 --perf -dev CUDA0,CUDA1 -sm tensor -ts 1,1 -ctk f16 -ctv f16 -no-cnv --no-display-prompt > "%TSFILE%" 2>&1

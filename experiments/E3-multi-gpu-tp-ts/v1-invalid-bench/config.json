@@ -1,10 +1,10 @@
 {
-  "experiment": "E3 — multi-GPU: pipeline parallel (layer split) против tensor split (-ts 50/50), prefill + decode при S=65k/131k/262k, обе RTX 5060 Ti (ROADMAP блок 6)",
+  "experiment": "E3 — multi-GPU: pipeline parallel (layer split) vs tensor split (-ts 50/50), prefill + decode at S=65k/131k/262k, both RTX 5060 Ti (ROADMAP block 6)",
   "date": "2026-10-23",
-  "status": "prepared: код и сетка готовы; прогон не выполнялся — ждёт запуска пользователем (нужны СВОБОДНЫЕ обе карты, бэкенд чата отключится на время)",
+  "status": "prepared: code and grid ready; run not executed — waiting for user launch (both cards must be FREE, the chat backend will disconnect during the run)",
   "runner": {
     "binary": "G:/uni/AoI/runner-cuda/llama-bench.exe",
-    "build": "llama.cpp b11819 (v0.7.0-dev), win-x64, CUDA 13.4 prebuilt; -ts и мульти-девайсы через запятую подтверждены пробоми --help 23.10.2026",
+    "build": "llama.cpp b11819 (v0.7.0-dev), win-x64, CUDA 13.4 prebuilt; -ts and comma-separated multi-device confirmed by --help probes on 23.10.2026",
     "driver": "NVIDIA 617.42 / UMD 13.4"
   },
   "model": {
@@ -13,48 +13,48 @@
     "arch": "L=48; 40 local SWA (window=1024) + 8 global full-attn; vocab=262144, lm_head tied"
   },
   "gpu": {
-    "devices": "обе RTX 5060 Ti 16 GiB: CUDA0 (display) + CUDA1 (non-display), VMM: yes на обеих",
-    "requirement": "перед прогоном закрыть ОБА инстанса LM Studio (бэкенд чата живёт на GPU0 — сессия отключится на время прогона, bat работает без присмотра; после запуска LM Studio обратно)"
+    "devices": "both RTX 5060 Ti 16 GiB: CUDA0 (display) + CUDA1 (non-display), VMM: yes on both",
+    "requirement": "close BOTH LM Studio instances before the run (the chat backend lives on GPU0 — the session will disconnect during the run, bat works unattended; restart LM Studio afterwards)"
   },
   "modes": {
-    "PP": "-dev CUDA0,CUDA1 -sm layer (pipeline parallel: слои разложены по картам последовательно). Ожидание физики: decode batch=1 НЕ ускоряется (тот же суммарный объём чтения, только с двух шин последовательно); prefill ~2x минус overhead",
-    "TS": "-dev CUDA0,CUDA1 -ts 50/50 (tensor split: каждая матрица GEMM разрезана по картам). Ожидание физики: чтение весов на токен делится пополам с каждой карты -> decode ~2x минус allreduce-overhead; prefill ~2x. Это замер ROADMAP-блока 6"
+    "PP": "-dev CUDA0,CUDA1 -sm layer (pipeline parallel: layers distributed across the cards sequentially). Physics expectation: decode batch=1 is NOT accelerated (same total volume read, just from two buses in sequence); prefill ~2x minus overhead",
+    "TS": "-dev CUDA0,CUDA1 -ts 50/50 (tensor split: each GEMM matrix cut across the cards). Physics expectation: per-token weight reads halved from each card -> decode ~2x minus allreduce-overhead; prefill ~2x. This is the ROADMAP block 6 measurement"
   },
   "grid": {
     "context_sizes_S": [65536, 131072, 262144],
     "kv_quants": ["f16"],
-    "cells": "12 = 6 prefill + 6 decode (3 S x 2 режима)",
+    "cells": "12 = 6 prefill + 6 decode (3 S x 2 modes)",
     "prefill_command_template": "llama-bench.exe -m <model> -p {S} -n 0 -r R -dev CUDA0,CUDA1 {mode_flags} -ctk f16 -ctv f16",
     "decode_command_template": "llama-bench.exe -m <model> -p 0 -n 64 -d {S} -r 2 -dev CUDA0,CUDA1 {mode_flags} -ctk f16 -ctv f16",
-    "repetitions": "prefill: r=2 для S<=131072, r=1 на 262144; decode: r=2 везде"
+    "repetitions": "prefill: r=2 for S<=131072, r=1 at 262144; decode: r=2 everywhere"
   },
   "metrics": {
-    "primary_prefill": "строка `pp{S}` (t/s ± std) — prefill TPS в каждом режиме",
-    "primary_decode": "строка `tg64 @ d{S}` (TPS ± std) — decode TPS после префикса S; сравнение с числами E2 на одной карте = выигрыш/убыток от параллелизма",
-    "comparison_baseline": "E2-long-context-prefill (одна карта CUDA1, те же S и f16 KV)"
+    "primary_prefill": "`pp{S}` line (t/s ± std) — prefill TPS in each mode",
+    "primary_decode": "`tg64 @ d{S}` line (TPS ± std) — decode TPS after an S prefix; comparison with E2 numbers on a single card = win/loss from parallelism",
+    "comparison_baseline": "E2-long-context-prefill (single CUDA1 card, same S and f16 KV)"
   },
-  "time_estimate": "~2-4 часа (overnight): prefill_flops при tflops_eff≈30 TFLOPS на ОДНОЙ карте ~68/173/497 s; в PP/TS примерно вдвое быстрее, но decode-ячейки делают свой prefill вне окна тайминга",
+  "time_estimate": "~2-4 hours (overnight): prefill_flops at tflops_eff≈30 TFLOPS on ONE card ~68/173/497 s; PP/TS roughly twice as fast, but decode cells do their own prefill outside the timing window",
   "launch_protocol": {
     "preflights_in_bat": [
-      "A: llama-bench --version + findstr CUDA (без VRAM)",
-      "B: -m фейковая модель -dev CUDA0,CUDA1 → 'invalid device' = fail; проверяет синтаксис мульти-девайса (~2 c, без VRAM)",
-      "C: реальная PP-ячейка f16 S=512 r=1 — findstr 'Device 1' (обе карты инициализированы) + exit 0 (короткий VRAM на обеих)",
-      "D: реальная TS-ячейка f16 S=512 r=1 -ts 50/50 — exit 0; проверяет, что tensor split принимается раннером"
+      "A: llama-bench --version + findstr CUDA (no VRAM)",
+      "B: -m fake model -dev CUDA0,CUDA1 → 'invalid device' = fail; checks multi-device syntax (~2 s, no VRAM)",
+      "C: real PP cell f16 S=512 r=1 — findstr 'Device 1' (both cards initialized) + exit 0 (short VRAM on both)",
+      "D: real TS cell f16 S=512 r=1 -ts 50/50 — exit 0; checks that tensor split is accepted by the runner"
     ],
     "abort_on_preflight": true,
-    "logging": "raw/run_log.txt: timestamp + точная командная строка + exit-код каждой ячейки; raw/pp_{mode}_f16_S{S}.txt и tg_d{S}_{mode}_f16.txt — полный вывод ячеек",
+    "logging": "raw/run_log.txt: timestamp + exact command line + exit code of each cell; raw/pp_{mode}_f16_S{S}.txt and tg_d{S}_{mode}_f16.txt — full cell output",
     "user_steps": [
-      "1. Закрыть ОБА инстанса LM Studio (сессия Qwen Code отключится на время прогона)",
-      "2. Двойной клик по experiments/E3-multi-gpu-tp-ts/run_e3.bat (консоль должна остаться открытой)",
-      "3. Дождаться 'E3 done' (оценка 2-4 ч); потом вернуть LM Studio"
+      "1. Close BOTH LM Studio instances (the Qwen Code session will disconnect during the run)",
+      "2. Double-click experiments/E3-multi-gpu-tp-ts/run_e3.bat (the console must stay open)",
+      "3. Wait for 'E3 done' (estimate 2-4 h); then restart LM Studio"
     ],
-    "note": "QWEN_NO_PAUSE=1 отключает pause; OOM/сбой ячейки не роняет сетку — bat продолжает, exit-код в run_log/raw"
+    "note": "QWEN_NO_PAUSE=1 disables pause; OOM/cell failure does not drop the grid — bat continues, exit code in run_log/raw"
   },
   "deliverables_5_files_protocol": [
-    "config.json (этот файл)",
+    "config.json (this file)",
     "raw/ (pp_{mode}_f16_S{S}.txt + tg_d{S}_{mode}_f16.txt + run_log.txt + preflight_*.txt)",
-    "table.md (таблица: S x режим {PP,TS} -> pp t/s и tg64 TPS; колонки сравнения с E2 одной картой)",
-    "plot.png (pp/tg TPS(S) для PP vs TS vs single-GPU E2)",
-    "conclusion.md (вывод: где tensor split даёт выигрыш против PP и одной карты, overhead коммуникации; C-xx в CONCLUSIONS.md после замера)"
+    "table.md (table: S × mode {PP,TS} -> pp t/s and tg64 TPS; comparison columns with single-card E2)",
+    "plot.png (pp/tg TPS(S) for PP vs TS vs single-GPU E2)",
+    "conclusion.md (findings: where tensor split wins over PP and a single card, communication overhead; C-xx in CONCLUSIONS.md after the measurement)"
   ]
 }

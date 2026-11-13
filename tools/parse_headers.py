@@ -1,10 +1,8 @@
-"""Разбор заголовков safetensors локальных моделей -> архитектура (ground truth с диска).
+"""Parse safetensors headers of local models -> architecture (ground truth from disk).
 
-CPU-only, stdlib. Читает только JSON-заголовок каждого shard'а (первые N байт),
-веса не трогаем. Вывод компактный: на модель — size/dtypes/число ТЕКСТОВЫХ слоёй
-(без vision tower) + shape тензоров layer 0 + embedding/lm_head.
+CPU-only, stdlib. Reads only the JSON header of each shard (first N bytes), weights untouched. Output is compact: per model — size/dtypes/number of TEXT layers (without vision tower) + shapes of layer 0 tensors + embedding/lm_head.
 
-Назначение: эталонные архитектурные параметры для math/inference_math.py и тестов.
+Purpose: reference architecture parameters for math/inference_math.py and tests.
 """
 import json
 import os
@@ -16,7 +14,7 @@ import sys
 
 
 def _models_root():
-    # strip: cmd `set VAR=path && ...` добавляет в конец значения пробел, и путь с ним не проходит is_dir()
+    # strip: cmd `set VAR=path && ...` appends a trailing space to the value, and the path with it fails is_dir()
     p = os.environ.get("AOI_MODELS_DIR", "").strip()
     if not p or not pathlib.Path(p).is_dir():
         sys.exit(
@@ -100,7 +98,7 @@ def dump_names(model, limit):
     for fp in sorted(d.glob("*.safetensors")):
         tensors.update(read_header(fp))
     items = sorted(tensors.items())
-    print(f"== {model}: {len(items)} тензоров, первые {min(limit, len(items))} ==")
+    print(f"== {model}: {len(items)} tensors, first {min(limit, len(items))} ==")
     for name, meta in items[:limit]:
         if isinstance(meta, dict):
             print(f"{name}\t{meta.get('dtype')}\t{meta.get('shape')}")
