@@ -29,11 +29,12 @@ import sys
 
 def _gguf_roots():
     raw = os.environ.get("AOI_GGUF_DIRS", "")
-    roots = [pathlib.Path(p) for p in raw.split(":") if p]
+    # strip: cmd `set VAR=a;b && ...` добавляет в конец значения пробел, и путь с ним не проходит is_dir()
+    roots = [pathlib.Path(p.strip()) for p in raw.split(";") if p.strip()]
     live = [r for r in roots if r.is_dir()]
     if not live:
         sys.exit(
-            "Set AOI_GGUF_DIRS to ':'-separated directories containing *.gguf. "
+            "Set AOI_GGUF_DIRS to ';'-separated directories containing *.gguf. "
             "Got: %r" % (raw,)
         )
     return live

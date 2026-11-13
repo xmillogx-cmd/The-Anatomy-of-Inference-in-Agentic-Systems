@@ -1,0 +1,3 @@
+# AoI — Python-зависимости: отсутствуют.
+# Все инструменты (inference_math.py, tools/*.py, tests/) — только стандартная библиотека,
+# CPU-only, Python >= 3.9. Файл существует как задокументированный no-op для `pip install -r requirements.txt`.

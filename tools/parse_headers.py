@@ -16,7 +16,8 @@ import sys
 
 
 def _models_root():
-    p = os.environ.get("AOI_MODELS_DIR", "")
+    # strip: cmd `set VAR=path && ...` добавляет в конец значения пробел, и путь с ним не проходит is_dir()
+    p = os.environ.get("AOI_MODELS_DIR", "").strip()
     if not p or not pathlib.Path(p).is_dir():
         sys.exit(
             "Set AOI_MODELS_DIR to the directory containing model folders "

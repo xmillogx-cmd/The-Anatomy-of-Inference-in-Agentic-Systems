@@ -1,62 +1,89 @@
 # AoI — Анатомия инференса в агентских систем
 
-Корневая папка проекта «The Anatomy of Inference». Создана: 2026-10-22.
+Препринт + весь код и данные экспериментов E1–E4: KV-кэш, квантование, prefill/decode на длинном контексте, multi-GPU tensor splitting (2× RTX 5060 Ti). Статья самодостаточна — читается без запуска чего бы то ни было.
 
-Статья (препринт, HTML): [`preprint/index.html`](preprint/index.html) — «Анатомия инференса в агентских систем: шина памяти, квантование и параллелизм». Код и данные всех экспериментов E1–E4 идут в репозитории; препринт самодостаточен для чтения без запуска.
+- **Статья:** [`preprint/index.html`](preprint/index.html)
+- **Репозиторий:** https://github.com/xmillogx-cmd/The-Anatomy-of-Inference-in-Agentic-Systems
 
 ## Структура
 
 | Путь | Назначение |
 |---|---|
 | `ROADMAP.md` | Дорожная карта 7 блоков + матплан каждого (формулы, артефакты, статус) |
-| `inference_math.py` | Математическое ядро: параметры, footprint, KV, TPS-потолок, roofline, квантование; CLI `python inference_math.py report` |
-| `CONCLUSIONS.md` | Журнал выводов C-xx: фиксируется только после пройденного теста/замера |
-| `tools/parse_headers.py` | Ground truth архитектур из header'ов safetensors локальных моделей (CPU-only) |
-| `tools/parse_gguf.py` | Разбор каталогов GGUF (архитектура, размеры слоёв, KV-типы) по env `AOI_GGUF_DIRS` |
-| `tests/test_inference_math.py` | Эталонные значения (ручной пересчёт): 25 тестов, запуск `python tests\test_inference_math.py -v` из корня репо; CPU-only, stdlib |
-| `preprint/` | Статья: `index.html`, инфографика (`images/`), код запуска (`code/launchers/*.bat`) + копия математического ядра и инструментов для самодостаточности препринта; `drafts/` — исходники статьи в Markdown |
-| `experiments/E1-kv-correlation/` | E1 — корреляция KV-типа и скорости: raw-логи llama.cpp, промт-файлы, launcher |
-| `experiments/E2-long-context-prefill/` | E2 — prefill на длинном контексте (S=512…262144) |
-| `experiments/E3-multi-gpu-tp-ts/` | E3 v1/v2 — попытка tensor parallelism (невалидные бенчмарки, сохранены как артефакты; `v1-invalid-bench/`) |
-| `experiments/E3-multi-gpu-tp-ts-v3/` | E3 v3 — корректный TS (`-sm tensor -ts 1,1`) через mirror-KV патч + SG baseline; preflight A/B bats |
-| `experiments/E4-qwopus-27b-vram-fit/` | E4 — Qwopus3.8-27B (arch qwen35): влезает ли на одну карту 16 GB, PP vs TS, KV f16/q8_0/q4_0 |
-| `docs/` | Вспомогательные документы: c17-ts-plan-tracker.md и др. |
+| `CONCLUSIONS.md` | Журнал выводов C-xx — фиксируется только после пройденного теста/замера |
+| `inference_math.py` | Математическое ядро: параметры архитектур, footprint, KV, TPS-потолок, roofline, квантование; CLI `python inference_math.py report` |
+| `tests/test_inference_math.py` | 25 эталонных тестов (ручной пересчёт), stdlib-only |
+| `tools/parse_headers.py` | Архитектуры из header'ов safetensors локальных моделей (ground truth) |
+| `tools/parse_gguf.py` | Разбор GGUF v1/v2/v3: архитектура, формы и типы тензоров, KV-типы |
+| `preprint/` | Статья: `index.html`, инфографика (`images/`), код запуска (`code/`) с копией математического ядра для самодостаточности; `drafts/` — исходники в Markdown |
+| `experiments/E1-kv-correlation/` … E4 | Данные экспериментов: raw-логи llama.cpp, промты, launchers (подробнее ниже) |
+| `docs/` | Вспомогательные документы (`c17-ts-plan-tracker.md` и др.) |
 
-## Запуск экспериментов (динамические пути)
+## Быстрый старт
 
-Все launchers (`preprint/code/launchers/*.bat`, копии в каталогах `experiments/*/`) не содержат жёстко закодированных путей: корень репо находится автоматически подъёмом вверх до файла `README.md` (маркер). Переменные окружения переопределяют дефолты:
+### Чтение статьи
 
-| Переменная | Для чего | Дефолт |
-|---|---|---|
-| `AOI_RUNNER` | Каталог с `llama-bench.exe` / `llama-completion.exe` / `llama-tokenize.exe` | `%AOI_ROOT%runner-cuda`; для E3v3 и preflight A/B — `%AOI_ROOT%runner-patched` |
-| `GGUF_MODEL` | Полный путь к `.gguf` модели (обязательно) | нет — без неё launcher abort на preflight 0 |
-| `AOI_PROMPTS` | Каталог с `prompt_*.txt` | `%AOI_ROOT%experiments\E3-multi-gpu-tp-ts\raw\prompts` |
-| `QWEN_NO_PAUSE` | Пустое значение отключает `pause` в конце bats (для CI/скриптов) | пауза включена |
+Откройте [`preprint/index.html`](preprint/index.html) в браузере. Вся инфографика локальная (`images/`), внешних зависимостей нет.
 
-Python-инструменты аналогично не зависят от конкретной машины:
+### Запуск экспериментов (Windows)
 
-| Переменная | Для чего |
-|---|---|
-| `AOI_MODELS_DIR` | Каталог с safetensors-фикстурами (`tools/parse_headers.py`) |
-| `AOI_GGUF_DIRS` | Колонноразделённый список каталогов GGUF (`tools/parse_gguf.py`) |
-
-Пример (Windows):
+1. Соберите раннер llama.cpp b11819 — см. [Зависимости → Раннеры](#раннеры-llama-cpp-b11819--не-входят-в-репозиторий).
+2. Задайте переменные окружения и запустите launcher:
 
 ```bat
-set GGUF_MODEL=C:\models\bartowski\Qwen3.5-4B-GPTQ-Q4_K_M.gguf
-:: AOI_RUNNER по умолчанию = %AOI_ROOT%runner-cuda; override только если раннер лежит в другом месте:
+set GGUF_MODEL=C:\models\gemma-4-12B-it-Q4_K_M.gguf
+:: AOI_RUNNER по умолчанию = %AOI_ROOT%runner-cuda; override только если раннер в другом месте:
 :: set AOI_RUNNER=D:\builds\llama.cpp-b11819-cuda
 preprint\code\launchers\run_e1.bat
 ```
 
-Каждый launcher имеет preflight 0 (проверка runner + модели до обращения к GPU) и пишет в `raw/run_log.txt` имя шага, команду и exit code каждого прогона; при abort — последние строки файла-доказательства.
+Каждый launcher имеет **preflight 0** (проверка runner + модели до обращения к GPU), пишет в `raw/run_log.txt` имя шага, команду и exit code каждого прогона; при abort — последние строки файла-доказательства.
 
-## Собранные раннеры не входят в репозиторий
+## Зависимости
 
-Каталоги `runner-cuda/`, `runner-patched/`, `runner/` (собранное llama.cpp) исключены `.gitignore` как бинарные артефакты сборки. Сборка: upstream **llama.cpp b11819** + патч mirror-KV — см. [`preprint/code/mirror-kv-patch.md`](preprint/code/mirror-kv-patch.md) (`runner-patched`, TDM-GCC, Vulkan; нужен для E3v3). `runner-cuda` — тот же b11819 с CUDA-бэкендом (E1/E2/E4).
+### Python-инструменты — без сторонних зависимостей
 
-## Примечания о данных
+**Python ≥ 3.9, только стандартная библиотека, CPU-only.** `pip install` не требуется; [`requirements.txt`](requirements.txt) — задокументированный no-op.
 
-- Raw-логи (`experiments/*/raw/*.txt`) содержат абсолютные пути из вывода llama.cpp (`load_backend: loaded CUDA backend from ...`) — это измерительное свидетельство, они сохраняются как есть.
-- `tmp-src/` (локальная рабочая копия upstream llama.cpp) и `src-llama-cpp-b11819/` исключены `.gitignore`; при необходимости скачиваются заново с GitHub releases b11819.
-- Промты: `experiments/E3-multi-gpu-tp-ts/raw/prompts/prompt_{512,1024,...,262144}.txt` — общий набор всех экспериментов (переиспользуется через `AOI_PROMPTS`).
+| Инструмент | Назначение | Переменная окружения для данных |
+|---|---|---|
+| `inference_math.py report` | Таблица AI/TPS/KV/crossover по локальным моделям | — (архитектуры берутся из header'ов) |
+| `tools/parse_headers.py` | Архитектура safetensors-фикстур: size/dtypes, слои layer 0, embedding/lm_head | `AOI_MODELS_DIR` — каталог с моделями |
+| `tools/parse_gguf.py [фильтр] [--all \| --tensors]` | Метаданные и тензоры GGUF v1/v2/v3 (v3-раскладка верифицирована hex-дампом) | `AOI_GGUF_DIRS` — список каталогов через `;` |
+
+### Раннеры (llama.cpp b11819) — не входят в репозиторий
+
+Собранные раннеры исключены `.gitignore` как бинарные артефакты сборки. Сборка: upstream **llama.cpp** [b11819](https://github.com/ggml-org/llama.cpp/releases/tag/b11819) + патч mirror-KV для `runner-patched`:
+
+| Каталог | Сборка | Для чего |
+|---|---|---|
+| `runner-cuda/` | b11819, CUDA-бэкенд (NVIDIA-драйвер + CUDA toolkit) | E1/E2/E4 — одна карта, CUDA backend |
+| `runner-patched/` | b11819 + **mirror-KV patch** (~20 строк), TDM-GCC 10.3 + Vulkan SDK, commit d327bf1f — [`preprint/code/mirror-kv-patch.md`](preprint/code/mirror-kv-patch.md) | E3 v3 — TS (`-sm tensor -ts 1,1`) на gemma-4: без патча upstream детерминированно крашится (C-17) |
+| `runner/` | вспомогательная сборка | — |
+
+Модели скачиваются отдельно (GGUF); промты в репозитории (`experiments/E3-multi-gpu-tp-ts/raw/prompts/`, общий набор всех экспериментов).
+
+## Переменные окружения launchers
+
+Все launchers (`preprint/code/launchers/*.bat` и копии в `experiments/*/`) не содержат жёстко закодированных путей: корень репо находится автоматически подъёмом вверх до файла `README.md` (маркер) — работает на любой ОС/раскладке.
+
+| Переменная | Для чего | Дефолт |
+|---|---|---|
+| `AOI_RUNNER` | Каталог с `llama-bench.exe` / `llama-completion.exe` / `llama-tokenize.exe` | `%AOI_ROOT%runner-cuda`; E3v3/preflight A/B — `%AOI_ROOT%runner-patched` |
+| `GGUF_MODEL` | Полный путь к `.gguf` (обязательно) | нет — abort на preflight 0 |
+| `AOI_PROMPTS` | Каталог с `prompt_*.txt` | общий набор в `experiments/E3-multi-gpu-tp-ts/raw/prompts` |
+| `QWEN_NO_PAUSE` | Пустое значение отключает финальную паузу bats (CI/скрипты) | пауза включена |
+
+## Тесты
+
+```bat
+python tests\test_inference_math.py -v   :: из корня репо: 25 тестов, эталоны — ручной пересчёт
+```
+
+CPU-only, stdlib. Идентичность mirror-TS `mirror(S) == ideal(2S)` зафиксирована отдельным тестом (см. [документацию патча](preprint/code/mirror-kv-patch.md)).
+
+## Данные и примечания
+
+- Raw-логи (`experiments/*/raw/*.txt`) содержат абсолютные пути из вывода llama.cpp — это измерительное свидетельство, они сохраняются как есть.
+- E3 v1/v2 — невалидные бенчмарки попыток tensor parallelism; сохранены как артефакты (`v1-invalid-bench/`).
+- Журналы проекта: `ROADMAP.md` (A-xx) и `CONCLUSIONS.md` (C-xx).

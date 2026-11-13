@@ -1,0 +1,11 @@
+# Нормализация line endings для всего репо; launchers — всегда CRLF (Windows cmd), бинарники — без преобразований
+* text=auto
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.gguf binary
+*.safetensors binary
