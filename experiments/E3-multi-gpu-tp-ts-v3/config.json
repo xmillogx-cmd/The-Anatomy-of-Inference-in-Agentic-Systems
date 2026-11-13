@@ -1,0 +1,64 @@
+{
+  "experiment": "E3-multi-gpu-tp-ts",
+  "version": 3,
+  "date_prepared": "2026-11-11",
+  "status": "RUN COMPLETE — grid 12/12 exit=0 (user-launched 2026-11-11 ~19:35); processed into table.md / plot.png / conclusion.md; new conclusion C-21 in CONCLUSIONS.md",
+  "roadmap_block": "Block 6: Pipeline vs Tensor parallelism in llama.cpp (PP vs TS empirical closure)",
+  "runner": {
+    "binary": "llama-completion.exe (one-shot, non-interactive)",
+    "build": "LOCAL BUILD from src d327bf1f (v0.7.0-dev), TDM-GCC 10.3 MinGW-w64 + Vulkan backend, G:\\uni\\AoI\\runner-patched",
+    "why_local_build": "upstream assert C-17 not fixed in master nor b12277 — no prebuilt binary can run TS on gemma-4; local build carries the mirror-KV patch (src/llama-model.cpp L542-L563): global layers with n_head_kv(il) < n_devices get attn_k weights + cache_(k|v)_lN MIRRORED instead of axis-0 split",
+    "measured_lines": "--perf prints separate 'prompt eval time' (pp t/s) and 'eval time / 63 runs' (tg t/s; one-shot -n N performs N-1 decode steps)"
+  },
+  "model": {
+    "path": "G:\\lmstudio\\lmstudio-community\\gemma-4-12B-it-GGUF\\gemma-4-12B-it-Q4_K_M.gguf",
+    "bytes": 7381384864,
+    "layers": 48,
+    "attention": "40 local SWA (window 1024) + 8 global full-attn at blk {5,11,...,47}"
+  },
+  "gpu": {
+    "devices": ["VULKAN0", "VULKAN0,VULKAN1"],
+    "cards": "2x NVIDIA RTX 5060 Ti 16GB (driver 617.42)",
+    "prerequisite": "CLOSE BOTH LM Studio instances before running (GPU0 instance serves this chat; GPU1 holds ~10.7 GiB). Chat session disconnects during the run."
+  },
+  "modes": {
+    "SG": "-dev VULKAN0   (single-GPU baseline for BW_eff recalibration and TS/SG ratios)",
+    "TS": "-dev VULKAN0,VULKAN1 -sm tensor -ts 1,1   (true tensor parallelism; works only with the mirror-KV patch — C-17 assert removed)"
+  },
+  "kv_quantizations": {
+    "f16": "-ctk f16 -ctv f16 (explicit)",
+    "q8_0": "-ctk q8_0 -ctv q8_0"
+  },
+  "grid": {
+    "S_tokens": [131072, 262144],
+    "prompt_files": "raw/prompts/prompt_{131072,262144}.txt — exact token counts verified by llama-tokenize (tokcheck_*.txt in raw/)",
+    "reps": {"131072": 2, "262144": 1},
+    "modes_per_cell": ["sg", "ts"],
+    "total_grid_runs": 12,
+    "cell_command_template": "llama-completion.exe -m MODEL -f raw/prompts/prompt_{S}.txt -n 64 --perf {dev} {-sm tensor -ts 1,1 if TS} -ctk Q -ctv Q --ignore-eos"
+  },
+  "preflights": [
+    "A: CPU smoke (-dev none, no VRAM) — full pipeline + both perf lines",
+    "B: token-count gate for both grid prompts via llama-tokenize (CPU)",
+    "EQUIV gate A/B (separate bats preflight_A_sg.bat / preflight_B_ts.bat): S=1024 f16, SG vs TS text equivalence — passed 2026-11-11: byte-identical prefix up to <|channel>thought, coherent continuations; strict A==B unattainable for split-GEMM (FP summation order via allreduce). SG anchor tg=34.94 t/s -> BW_eff Vulkan = 247.6 GB/s"
+  ],
+  "metrics": {
+    "pp_tps": "from 'prompt eval time = X ms / N tokens (... tokens per second)' line",
+    "tg_tps": "from 'eval time = Y ms / 63 runs (... tokens per second)' line (one-shot -n N performs N-1 decode steps)"
+  },
+  "bw_eff_calibration": {
+    "anchor_cell": "preflight SG S=1024 f16: tg = 34.94 t/s",
+    "bytes_per_token_S1024_f16": 7085873116,
+    "BW_eff_Vulkan_GBps": 247.6,
+    "vs_spec_448": "x0.553 (CUDA was 397.7 GB/s = x0.887)",
+    "note": "simple BW model does not describe Vulkan across S: implied BW per SG cell = tg x bytes_read_per_token -> 320.9/269.7/312.2/247.4 GB/s (s131k f16/q8, s262k f16/q8); tg flat S=1024->131k despite +30% bytes/token"
+  },
+  "hypotheses_to_test": [
+    "TS mirror-KV BW ceiling: bytes/card = W/2 + SWA_KV/2 + GLOBAL_KV(full, mirrored) -> 5.682/4.524/7.830/5.598 GB for s131k f16/q8 / s262k f16/q8; ceiling @BW_vulkan = 43.57/54.72/31.62/44.23 t/s",
+    "allreduce cost: L*2 = 96 allreduces/token x d_model*e = 737,280 B/token over PCIe (no P2P — via host memory); SNU ThunderEP concurrent consumer-PCIe BW ~35.5 GB/s/GPU",
+    "q8_0 KV halves the mirrored global-KV term -> model predicts +16..+40% tg vs f16 in mirror mode",
+    "TS prefill: split-GEMM parallelizes compute-bound phase -> expect >SG at small S"
+  ],
+  "deliverables_5_files_protocol": ["config.json", "raw/", "table.md", "plot.png", "conclusion.md"],
+  "launch_protocol": "user closes both LM Studio instances, runs run_e3v3.bat (QWEN_NO_PAUSE=1 optional for unattended); ~2.5 h; then agent processes raw -> table/plot/conclusion + new C-xx"
+}

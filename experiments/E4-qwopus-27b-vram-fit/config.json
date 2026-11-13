@@ -1,0 +1,79 @@
+{
+  "experiment": "E4 — Qwopus3.8-27B-Coder-Flash: влезает/не влезает на 2× RTX 5060 Ti 16 GB",
+  "date": "2026-11-12",
+  "runs": {
+    "main": {
+      "launcher": "run_e4.bat (копия preprint/code/launchers/run_e4.bat)",
+      "window": "12.11.2026 5:24:29 — 6:05:05",
+      "log_tag": "[E4]"
+    },
+    "q4_supplement": {
+      "launcher": "run_e4_q4.bat (копия preprint/code/launchers/run_e4_q4.bat)",
+      "window_start": "12.11.2026 12:49:34",
+      "log_tag": "[E4q4]",
+      "note": "догоняет q4_0-ячейки грида (в основном прогоне были только f16/q8_0)"
+    }
+  },
+  "model": {
+    "path": "G:\\lmstudio\\bartowski\\Jackrong_Qwopus3.8-27B-Coder-Flash-GGUF\\Jackrong_Qwopus3.8-27B-Coder-Flash-Q4_K_M.gguf",
+    "size_bytes": 17442401824,
+    "size_gib": 16.2,
+    "mmproj": "mmproj_f16.gguf (927 MB) — не используется в текстовом бенче",
+    "arch": {
+      "name": "qwen35",
+      "type": "hybrid (full-attn + recurrent/SSM)",
+      "block_count": 65,
+      "full_attention_interval": 4,
+      "full_attn_layers": 17,
+      "recurrent_layers": 48,
+      "head_count_kv": 4,
+      "key_length": 256,
+      "value_length": 256,
+      "embedding_length": 5120,
+      "ctx_native": 262144,
+      "nextn_predict_layers": 1,
+      "notes": [
+        "blk.64 = nextn MTP слой — билд его игнорирует (~239 MB весов offloaded, warning 'model has unused tensor blk.64.*')",
+        "KV растёт только на full-attn слоях: 17 × 4 heads × 256 dim × 2(K+V) = 69632 B/pos f16; q8_0 — половина, q4_0 — четверть",
+        "SSM-состояние recurrent-слоёв фиксированное (не растёт с контекстом)"
+      ]
+    }
+  },
+  "runner": {
+    "path": "G:\\uni\\AoI\\runner-cuda",
+    "version": "llama.cpp b11819 + mirror-KV патч (CUDA-13.4 build)",
+    "auto_fit": true,
+    "auto_fit_warning": "common_fit_params включён: при нехватке VRAM вместо OOM — тихий partial-offload в RAM с exit=0 («exit=0-ловушка», строка 1)"
+  },
+  "hardware": {
+    "gpus": "2× NVIDIA RTX 5060 Ti 16 GB (CUDA0, CUDA1)",
+    "preflight_gate": "обе карты < 2 GiB занято перед стартом (gpu_free.txt, gpu_free_q4.txt)"
+  },
+  "prompts": {
+    "dir": "G:\\uni\\AoI\\experiments\\E3-multi-gpu-tp-ts\\raw\\prompts",
+    "tokens": {
+      "prompt_512.txt": 511,
+      "prompt_131072.txt": 131071,
+      "prompt_262144.txt": 262143
+    },
+    "note": "переиспользованы из E3 (размер ~0.998× от gemma-4); токенизация Qwopus подтверждена llama-tokenize probe"
+  },
+  "common_flags": ["-n", "64", "--ignore-eos", "--perf", "--no-cnv", "--no-display-prompt"],
+  "cells": [
+    {"id": 1, "name": "SG probe", "flags": "-dev CUDA1 -c 768 -ctk f16 -ctv f16", "S": 512, "kv": "f16", "evidence": "raw/e4_sg_s512_f16.txt"},
+    {"id": 2, "name": "PP smoke / baseline S=512", "flags": "-dev CUDA0,CUDA1 -sm layer -c 768", "S": 512, "kv": "f16", "evidence": "raw/preflight_pp_smoke.txt"},
+    {"id": 3, "name": "TS probe", "flags": "-dev CUDA0,CUDA1 -sm tensor -ts 1,1 -c 768", "S": 512, "kv": "f16 (default)", "evidence": "raw/e4_ts_s512_f16.txt"},
+    {"id": 4, "name": "PP grid S=131k f16", "flags": "-dev CUDA0,CUDA1 -sm layer -c 131328 -ctk f16 -ctv f16", "S": 131072, "kv": "f16", "evidence": "raw/e4_pp_s131072_f16.txt"},
+    {"id": 5, "name": "PP grid S=131k q8_0", "flags": "-dev CUDA0,CUDA1 -sm layer -c 131328 -ctk q8_0 -ctv q8_0", "S": 131072, "kv": "q8_0", "evidence": "raw/e4_pp_s131072_q8_0.txt"},
+    {"id": 6, "name": "PP grid S=131k q4_0 (supplement)", "flags": "-dev CUDA0,CUDA1 -sm layer -c 131328 -ctk q4_0 -ctv q4_0", "S": 131072, "kv": "q4_0", "evidence": "raw/e4_pp_s131072_q4_0.txt"},
+    {"id": 7, "name": "PP grid S=262k f16", "flags": "-dev CUDA0,CUDA1 -sm layer -c 262400 -ctk f16 -ctv f16", "S": 262144, "kv": "f16", "evidence": "raw/e4_pp_s262144_f16.txt"},
+    {"id": 8, "name": "PP grid S=262k q8_0", "flags": "-dev CUDA0,CUDA1 -sm layer -c 262400 -ctk q8_0 -ctv q8_0", "S": 262144, "kv": "q8_0", "evidence": "raw/e4_pp_s262144_q8_0.txt"},
+    {"id": 9, "name": "PP grid S=262k q4_0 (supplement)", "flags": "-dev CUDA0,CUDA1 -sm layer -c 262400 -ctk q4_0 -ctv q4_0", "S": 262144, "kv": "q4_0", "evidence": "raw/e4_pp_s262144_q4_0.txt"}
+  ],
+  "context_padding_rule": "-c = S + 256 (запас под decode-токены; llama.cpp предупреждает 'n_ctx_seq > n_ctx_train' для 262k — не фатально)",
+  "preflight_A": {"cmd": "llama-completion -dev none (CPU) с prompt_512", "purpose": "arch qwen35 читается раннером", "evidence": "raw/preflight_cpu_smoke.txt"},
+  "caveats": [
+    "одиночные прогоны: каждая ячейка запущена один раз, decode-выборка 63 токена — шум ±несколько %",
+    "%TIME% внутри FOR-блоков bat схлопнут на момент входа в итерацию (артефакт парсинга cmd) — точные времена берутся из perf-строк evidence-файлов"
+  ]
+}

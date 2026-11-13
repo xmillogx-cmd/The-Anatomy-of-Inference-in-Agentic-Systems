@@ -1,0 +1,60 @@
+{
+  "experiment": "E3 — multi-GPU: pipeline parallel (layer split) против tensor split (-ts 50/50), prefill + decode при S=65k/131k/262k, обе RTX 5060 Ti (ROADMAP блок 6)",
+  "date": "2026-10-23",
+  "status": "prepared: код и сетка готовы; прогон не выполнялся — ждёт запуска пользователем (нужны СВОБОДНЫЕ обе карты, бэкенд чата отключится на время)",
+  "runner": {
+    "binary": "G:/uni/AoI/runner-cuda/llama-bench.exe",
+    "build": "llama.cpp b11819 (v0.7.0-dev), win-x64, CUDA 13.4 prebuilt; -ts и мульти-девайсы через запятую подтверждены пробоми --help 23.10.2026",
+    "driver": "NVIDIA 617.42 / UMD 13.4"
+  },
+  "model": {
+    "gguf": "G:/lmstudio/lmstudio-community/gemma-4-12B-it-GGUF/gemma-4-12B-it-Q4_K_M.gguf",
+    "file_bytes": 7381384864,
+    "arch": "L=48; 40 local SWA (window=1024) + 8 global full-attn; vocab=262144, lm_head tied"
+  },
+  "gpu": {
+    "devices": "обе RTX 5060 Ti 16 GiB: CUDA0 (display) + CUDA1 (non-display), VMM: yes на обеих",
+    "requirement": "перед прогоном закрыть ОБА инстанса LM Studio (бэкенд чата живёт на GPU0 — сессия отключится на время прогона, bat работает без присмотра; после запуска LM Studio обратно)"
+  },
+  "modes": {
+    "PP": "-dev CUDA0,CUDA1 -sm layer (pipeline parallel: слои разложены по картам последовательно). Ожидание физики: decode batch=1 НЕ ускоряется (тот же суммарный объём чтения, только с двух шин последовательно); prefill ~2x минус overhead",
+    "TS": "-dev CUDA0,CUDA1 -ts 50/50 (tensor split: каждая матрица GEMM разрезана по картам). Ожидание физики: чтение весов на токен делится пополам с каждой карты -> decode ~2x минус allreduce-overhead; prefill ~2x. Это замер ROADMAP-блока 6"
+  },
+  "grid": {
+    "context_sizes_S": [65536, 131072, 262144],
+    "kv_quants": ["f16"],
+    "cells": "12 = 6 prefill + 6 decode (3 S x 2 режима)",
+    "prefill_command_template": "llama-bench.exe -m <model> -p {S} -n 0 -r R -dev CUDA0,CUDA1 {mode_flags} -ctk f16 -ctv f16",
+    "decode_command_template": "llama-bench.exe -m <model> -p 0 -n 64 -d {S} -r 2 -dev CUDA0,CUDA1 {mode_flags} -ctk f16 -ctv f16",
+    "repetitions": "prefill: r=2 для S<=131072, r=1 на 262144; decode: r=2 везде"
+  },
+  "metrics": {
+    "primary_prefill": "строка `pp{S}` (t/s ± std) — prefill TPS в каждом режиме",
+    "primary_decode": "строка `tg64 @ d{S}` (TPS ± std) — decode TPS после префикса S; сравнение с числами E2 на одной карте = выигрыш/убыток от параллелизма",
+    "comparison_baseline": "E2-long-context-prefill (одна карта CUDA1, те же S и f16 KV)"
+  },
+  "time_estimate": "~2-4 часа (overnight): prefill_flops при tflops_eff≈30 TFLOPS на ОДНОЙ карте ~68/173/497 s; в PP/TS примерно вдвое быстрее, но decode-ячейки делают свой prefill вне окна тайминга",
+  "launch_protocol": {
+    "preflights_in_bat": [
+      "A: llama-bench --version + findstr CUDA (без VRAM)",
+      "B: -m фейковая модель -dev CUDA0,CUDA1 → 'invalid device' = fail; проверяет синтаксис мульти-девайса (~2 c, без VRAM)",
+      "C: реальная PP-ячейка f16 S=512 r=1 — findstr 'Device 1' (обе карты инициализированы) + exit 0 (короткий VRAM на обеих)",
+      "D: реальная TS-ячейка f16 S=512 r=1 -ts 50/50 — exit 0; проверяет, что tensor split принимается раннером"
+    ],
+    "abort_on_preflight": true,
+    "logging": "raw/run_log.txt: timestamp + точная командная строка + exit-код каждой ячейки; raw/pp_{mode}_f16_S{S}.txt и tg_d{S}_{mode}_f16.txt — полный вывод ячеек",
+    "user_steps": [
+      "1. Закрыть ОБА инстанса LM Studio (сессия Qwen Code отключится на время прогона)",
+      "2. Двойной клик по experiments/E3-multi-gpu-tp-ts/run_e3.bat (консоль должна остаться открытой)",
+      "3. Дождаться 'E3 done' (оценка 2-4 ч); потом вернуть LM Studio"
+    ],
+    "note": "QWEN_NO_PAUSE=1 отключает pause; OOM/сбой ячейки не роняет сетку — bat продолжает, exit-код в run_log/raw"
+  },
+  "deliverables_5_files_protocol": [
+    "config.json (этот файл)",
+    "raw/ (pp_{mode}_f16_S{S}.txt + tg_d{S}_{mode}_f16.txt + run_log.txt + preflight_*.txt)",
+    "table.md (таблица: S x режим {PP,TS} -> pp t/s и tg64 TPS; колонки сравнения с E2 одной картой)",
+    "plot.png (pp/tg TPS(S) для PP vs TS vs single-GPU E2)",
+    "conclusion.md (вывод: где tensor split даёт выигрыш против PP и одной карты, overhead коммуникации; C-xx в CONCLUSIONS.md после замера)"
+  ]
+}

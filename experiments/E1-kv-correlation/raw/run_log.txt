@@ -1,0 +1,40 @@
+[E1] run start 23.10.2026  0:23:38,42 
+[E1] 23.10.2026  0:23:39,52 preflight A OK: runner + CUDA backend 
+[E1] 23.10.2026  0:23:39,68 preflight B OK: -dev CUDA1 accepted 
+[E1] 23.10.2026  0:23:49,34 preflight C OK: real cell f16 S=1024, tg64 @ d1024 row present 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=1024 CMD: llama-bench -m MODEL -p 0 -n 64 -d 1024 -r 3 -dev CUDA1 -ctk f16 -ctv f16 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=1024 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=2048 CMD: llama-bench -m MODEL -p 0 -n 64 -d 2048 -r 3 -dev CUDA1 -ctk f16 -ctv f16 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=2048 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=4096 CMD: llama-bench -m MODEL -p 0 -n 64 -d 4096 -r 3 -dev CUDA1 -ctk f16 -ctv f16 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=4096 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=8192 CMD: llama-bench -m MODEL -p 0 -n 64 -d 8192 -r 3 -dev CUDA1 -ctk f16 -ctv f16 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=8192 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=16384 CMD: llama-bench -m MODEL -p 0 -n 64 -d 16384 -r 3 -dev CUDA1 -ctk f16 -ctv f16 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=16384 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=32768 CMD: llama-bench -m MODEL -p 0 -n 64 -d 32768 -r 3 -dev CUDA1 -ctk f16 -ctv f16 
+[E1] 23.10.2026  0:23:49,34 kv=f16 S=32768 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=1024 CMD: llama-bench -m MODEL -p 0 -n 64 -d 1024 -r 3 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=1024 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=2048 CMD: llama-bench -m MODEL -p 0 -n 64 -d 2048 -r 3 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=2048 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=4096 CMD: llama-bench -m MODEL -p 0 -n 64 -d 4096 -r 3 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=4096 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=8192 CMD: llama-bench -m MODEL -p 0 -n 64 -d 8192 -r 3 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=8192 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=16384 CMD: llama-bench -m MODEL -p 0 -n 64 -d 16384 -r 3 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=16384 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=32768 CMD: llama-bench -m MODEL -p 0 -n 64 -d 32768 -r 3 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E1] 23.10.2026  0:23:49,34 kv=q8_0 S=32768 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=1024 CMD: llama-bench -m MODEL -p 0 -n 64 -d 1024 -r 3 -dev CUDA1 -ctk q4_0 -ctv q4_0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=1024 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=2048 CMD: llama-bench -m MODEL -p 0 -n 64 -d 2048 -r 3 -dev CUDA1 -ctk q4_0 -ctv q4_0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=2048 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=4096 CMD: llama-bench -m MODEL -p 0 -n 64 -d 4096 -r 3 -dev CUDA1 -ctk q4_0 -ctv q4_0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=4096 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=8192 CMD: llama-bench -m MODEL -p 0 -n 64 -d 8192 -r 3 -dev CUDA1 -ctk q4_0 -ctv q4_0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=8192 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=16384 CMD: llama-bench -m MODEL -p 0 -n 64 -d 16384 -r 3 -dev CUDA1 -ctk q4_0 -ctv q4_0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=16384 exit=0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=32768 CMD: llama-bench -m MODEL -p 0 -n 64 -d 32768 -r 3 -dev CUDA1 -ctk q4_0 -ctv q4_0 
+[E1] 23.10.2026  0:23:49,34 kv=q4_0 S=32768 exit=0 

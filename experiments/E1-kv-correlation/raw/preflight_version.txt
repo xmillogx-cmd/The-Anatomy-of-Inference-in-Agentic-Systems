@@ -1,0 +1,8 @@
+ggml_cuda_init: found 2 CUDA devices (Total VRAM: 32566 MiB):
+  Device 0: NVIDIA GeForce RTX 5060 Ti, compute capability 12.0, VMM: yes, VRAM: 16283 MiB
+  Device 1: NVIDIA GeForce RTX 5060 Ti, compute capability 12.0, VMM: yes, VRAM: 16283 MiB
+load_backend: loaded CUDA backend from G:\uni\AoI\runner-cuda\ggml-cuda.dll
+load_backend: loaded RPC backend from G:\uni\AoI\runner-cuda\ggml-rpc.dll
+load_backend: loaded CPU backend from G:\uni\AoI\runner-cuda\ggml-cpu-haswell.dll
+version: 0.7.0-dev (build 11819, commit 0693dbfb9)
+built with Clang 20.1.8 for Windows x86_64

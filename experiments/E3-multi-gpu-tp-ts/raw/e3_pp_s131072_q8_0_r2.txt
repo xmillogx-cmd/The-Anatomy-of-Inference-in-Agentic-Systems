@@ -1,0 +1,31 @@
+0.00.110.528 I llama_completion: llama backend init
+0.00.110.534 I llama_completion: load the model and apply lora adapter, if any
+0.00.982.921 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.00.982.975 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.01.030.592 W load: '</s>' is a normal token here, removing it from EOG list
+0.04.142.668 I cmn          init: llama threadpool init, n_threads = 8
+0.04.279.935 I 
+0.04.279.974 I system_info: n_threads = 8 (n_threads_batch = 8) / 16 | CUDA : ARCHS = 750,800,860,890,900,1200,1210 | USE_GRAPHS = 1 | FA_QUANTS = q4_0-q4_0,q8_0-q8_0,f16-f16,bf16-bf16 | BLACKWELL_NATIVE_FP4 = 1 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 | 
+0.04.279.974 I 
+0.04.450.060 I sampler seed: 720153385
+0.04.450.083 I sampler params: 
+	repeat_last_n = 64, repeat_penalty = 1.000, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 64, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 1.000
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.04.450.098 I sampler chain: logits -> logit-bias -> ?penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> ?temp-ext -> dist 
+0.04.450.099 I generate: n_ctx = 131328, n_batch = 2048, n_predict = 64, n_keep = 1
+0.04.450.100 I 
+ GPU is large language model during during long context inference.
+<|channel> thought: I understand that you are providing a repeated phrase as a test or prompt. Please let me know if there is a specific topic you would like to discuss or a question you would like me to answer. I am here to help!
+<|channel>thought
+
+1.24.802.495 I common_perf_print:    sampling time =      38.23 ms
+1.24.802.496 I common_perf_print:    samplers time =      14.34 ms / 131136 tokens
+1.24.802.498 I common_perf_print:        load time =    3485.96 ms
+1.24.802.499 I common_perf_print: prompt eval time =   77846.16 ms / 131072 tokens (    0.59 ms per token,  1683.73 tokens per second)
+1.24.802.501 I common_perf_print:        eval time =    2473.72 ms /    63 runs   (   39.27 ms per token,    25.47 tokens per second)
+1.24.802.502 I common_perf_print:       total time =   80522.56 ms / 131135 tokens
+1.24.802.503 I common_perf_print: unaccounted time =     164.45 ms /   0.2 %      (total - sampling - prompt eval - eval) / (total)
+1.24.802.504 I common_perf_print:    graphs reused =         62
+1.24.802.504 I common_perf_print:   graph reallocs =          0    /     0        (same size) / (changed size)

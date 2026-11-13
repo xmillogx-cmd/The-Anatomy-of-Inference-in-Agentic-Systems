@@ -1,0 +1,28 @@
+[E2] run start 23.10.2026 12:24:04,07 
+[E2] 23.10.2026 12:24:05,99 preflight A OK: runner + CUDA backend 
+[E2] 23.10.2026 12:24:06,13 preflight B OK: -dev CUDA1 accepted 
+[E2] 23.10.2026 12:24:32,77 preflight C OK: real prefill cell f16 S=1024, pp1024 row present 
+[E2] 23.10.2026 12:24:32,77 PREFILL kv=f16 S=65536 CMD: llama-bench -m MODEL -p 65536 -n 0 -r 2 -dev CUDA1 -ctk f16 -ctv f16 
+[E2] 23.10.2026 12:24:32,77 PREFILL kv=f16 S=65536 exit=0 
+[E2] 23.10.2026 12:24:32,77 PREFILL kv=f16 S=131072 CMD: llama-bench -m MODEL -p 131072 -n 0 -r 2 -dev CUDA1 -ctk f16 -ctv f16 
+[E2] 23.10.2026 12:24:32,77 PREFILL kv=f16 S=131072 exit=0 
+[E2] 23.10.2026 12:24:32,77 PREFILL kv=q8_0 S=65536 CMD: llama-bench -m MODEL -p 65536 -n 0 -r 2 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E2] 23.10.2026 12:24:32,77 PREFILL kv=q8_0 S=65536 exit=0 
+[E2] 23.10.2026 12:24:32,77 PREFILL kv=q8_0 S=131072 CMD: llama-bench -m MODEL -p 131072 -n 0 -r 2 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E2] 23.10.2026 12:24:32,77 PREFILL kv=q8_0 S=131072 exit=0 
+[E2] 23.10.2026 12:42:00,84 PREFILL kv=f16 S=262144 CMD: llama-bench -m MODEL -p 262144 -n 0 -r 1 -dev CUDA1 -ctk f16 -ctv f16 
+[E2] 23.10.2026 12:42:00,84 PREFILL kv=f16 S=262144 exit=0 
+[E2] 23.10.2026 12:42:00,84 PREFILL kv=q8_0 S=262144 CMD: llama-bench -m MODEL -p 262144 -n 0 -r 1 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E2] 23.10.2026 12:42:00,84 PREFILL kv=q8_0 S=262144 exit=0 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=f16 S=65536 CMD: llama-bench -m MODEL -p 0 -n 64 -d 65536 -r 2 -dev CUDA1 -ctk f16 -ctv f16 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=f16 S=65536 exit=0 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=f16 S=131072 CMD: llama-bench -m MODEL -p 0 -n 64 -d 131072 -r 2 -dev CUDA1 -ctk f16 -ctv f16 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=f16 S=131072 exit=0 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=f16 S=262144 CMD: llama-bench -m MODEL -p 0 -n 64 -d 262144 -r 2 -dev CUDA1 -ctk f16 -ctv f16 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=f16 S=262144 exit=0 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=q8_0 S=65536 CMD: llama-bench -m MODEL -p 0 -n 64 -d 65536 -r 2 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=q8_0 S=65536 exit=0 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=q8_0 S=131072 CMD: llama-bench -m MODEL -p 0 -n 64 -d 131072 -r 2 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=q8_0 S=131072 exit=0 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=q8_0 S=262144 CMD: llama-bench -m MODEL -p 0 -n 64 -d 262144 -r 2 -dev CUDA1 -ctk q8_0 -ctv q8_0 
+[E2] 23.10.2026 13:07:52,13 DECODE kv=q8_0 S=262144 exit=0 

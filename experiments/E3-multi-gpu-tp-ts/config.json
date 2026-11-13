@@ -1,0 +1,69 @@
+{
+  "experiment": "E3-multi-gpu-tp-ts",
+  "version": 2,
+  "date_prepared": "2026-10-24",
+  "status": "ready for run — PP-only redesign (TS mode crashes at graph construction on gemma-4 hybrid SWA in b11819, by design upstream; documented as C-17); v1 archived as invalid for multi-GPU split (v1-invalid-bench/, C-16)",
+  "roadmap_block": "Block 6: Pipeline vs Tensor parallelism in llama.cpp",
+  "runner": {
+    "binary": "llama-completion.exe (one-shot, non-interactive; -no-cnv disables the chat-template conversation path)",
+    "build": "b11819 (v0.7.0-dev), CUDA 13.4 prebuilt, G:\\uni\\AoI\\runner-cuda",
+    "why_not_llama_bench": "C-16: llama-bench b11819 benchmarks the full model once per device in bench mode; -ts/-sm ineffective there — v1 data valid only as per-card comparison. llama-completion supports true multi-GPU split.",
+    "measured_lines": "--perf prints separate 'prompt eval time' (pp t/s) and 'eval time / 63 runs' (tg t/s; b11819 one-shot -n N performs N-1 decode steps); one run per cell yields both metrics",
+    "n_batch_default": 2048,
+    "batch_equivalence_note": "llama-bench b11819 default -b is also 2048 -> CLI numbers comparable with E1/E2 bench data (validated by preflight D equivalence gate)"
+  },
+  "model": {
+    "path": "G:\\lmstudio\\lmstudio-community\\gemma-4-12B-it-GGUF\\gemma-4-12B-it-Q4_K_M.gguf",
+    "bytes": 7381384864,
+    "layers": 48,
+    "attention": "40 local SWA (window 1024) + 8 global full-attn"
+  },
+  "gpu": {
+    "devices": ["CUDA0", "CUDA1"],
+    "cards": "2x NVIDIA RTX 5060 Ti 16GB (cc 12.0)",
+    "prerequisite": "CLOSE BOTH LM Studio instances before running (GPU0 instance serves this chat; GPU1 holds ~10.7 GiB). Chat session disconnects during the run."
+  },
+  "modes": {
+    "PP": "-dev CUDA0,CUDA1 -sm layer   (split layers and KV across GPUs, pipelined) — the only working split mode in this stack",
+    "TS_excluded": "-sm tensor -ts 1,1 crashes at graph construction on gemma-4 hybrid SWA: GGML_ASSERT(src_ss[0].axis != SPLIT_AXIS_0), ggml-backend-meta.cpp:547 (per-row ops reject axis-0 splits; by design upstream, present in master); 4 identical reproductions 2026-10-23/24 -> excluded from the grid, documented as C-17"
+  },
+  "kv_quantizations": {
+    "f16": "-ctk f16 -ctv f16 (explicit)",
+    "q8_0": "-ctk q8_0 -ctv q8_0"
+  },
+  "grid": {
+    "S_tokens": [131072, 262144],
+    "prompt_files": "raw/prompts/prompt_{S}.txt — exact token counts verified by llama-tokenize (also prompt_512/1024 for preflights)",
+    "reps": {"131072": 2, "262144": 1},
+    "cells_per_S": 2,
+    "total_grid_runs": 6,
+    "cell_command_template": "llama-completion.exe -m MODEL -f raw/prompts/prompt_{S}.txt -n 64 -c {S+256} --perf -dev CUDA0,CUDA1 -sm layer -ctk Q -ctv Q -no-cnv --ignore-eos --no-display-prompt",
+    "flags_notes": {
+      "-n 64": "one run per cell gives both metrics; decode phase = 63 steps (b11819 one-shot quirk: -n N performs N-1 decode iterations — tg63 semantics, rate comparable to E1/E2); note -n 0 does NOT eval the prompt in llama-completion b11819",
+      "--ignore-eos": "gemma-4 hits EOS early on synthetic prompts (3/4 tokens in probe) — guarantees full 64 decode steps",
+      "-no-cnv": "disables conversation mode (auto-enabled because gemma-4 has a chat template); keeps raw prompt path comparable to llama-bench",
+      "--no-display-prompt": "keeps raw files compact at S=131k/256k"
+    }
+  },
+  "preflights": [
+    "A: CPU smoke (-dev none, no VRAM) — full pipeline + both perf lines on prompt_512",
+    "B: token-count gate for all four prompt files via llama-tokenize -dev none (CPU)",
+    "C: PP smoke S=512 f16 both cards, n=64 (-sm layer)",
+    "D: equivalence cell — single GPU CUDA1, prompt_1024, f16, n=64; tg must be 40..56 t/s with exactly 63 runs (b11819 one-shot -n N performs N-1 decode steps; E1 baseline ~47-48 @d1k) else abort before grid"
+  ],
+  "metrics": {
+    "pp_tps": "from 'prompt eval time = X ms / N tokens (... tokens per second)' line",
+    "tg_tps": "from 'eval time = Y ms / 63 runs (... tokens per second)' line (one-shot -n N performs N-1 decode steps)",
+    "actual_S": "'/ N tokens' in the prompt line is the ground-truth processed token count (cited in table)"
+  },
+  "vram_fit_262k": "~5.7-6 GiB/card for f16 KV in PP mode (weights halved + KV split) << 16 GiB; q8_0 halves KV further",
+  "time_estimate": "~40-60 min: prefill dominates (~90-120 s/cell @131k, ~4 min/cell @262k); 4 runs @131k + 2 @262k + preflights A-D",
+  "hypotheses_to_test": [
+    "PP prefill at S>=131k: compute-bound; layers pipelined across the two cards -> up to ~1.8-2x single-GPU (E2) rate minus a small pipeline bubble",
+    "tg decode at 131k/262k: batch=1, layer chain serialized across cards -> expect ~0.9-1.0x single-GPU rate (pipeline overhead already visible at S=512: 42.68 vs ~47-48 t/s)",
+    "tg decode memory-bound; q8_0 KV halves KV bytes but dequant overhead worsens TPS as S grows on this stack (C-12/C-15) — check whether it pays off at >=131k",
+    "TS (-sm tensor) is unusable on gemma-4 in b11819 (graph-construction assert, by design upstream; C-17) — recorded as the negative result of Block 6"
+  ],
+  "deliverables_5_files_protocol": ["config.json", "raw/", "table.md", "plot.png", "conclusion.md"],
+  "launch_protocol": "user closes both LM Studio instances, runs run_e3.bat (QWEN_NO_PAUSE=1 optional for unattended), ~40-60 min; then agent processes raw -> table/plot/conclusion + new C-xx"
+}

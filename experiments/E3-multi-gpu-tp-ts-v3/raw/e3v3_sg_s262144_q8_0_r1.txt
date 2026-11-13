@@ -1,0 +1,34 @@
+0.00.210.540 I llama_completion: llama backend init
+0.00.210.540 I llama_completion: load the model and apply lora adapter, if any
+0.01.479.233 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.01.479.233 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.01.497.947 W load: '</s>' is a normal token here, removing it from EOG list
+0.04.682.158 W llama_context: n_ctx_seq (262400) > n_ctx_train (262144) -- possible training context overflow
+0.04.813.483 I cmn          init: llama threadpool init, n_threads = 8
+0.04.925.881 W llama_completion: model was trained on only 262144 context tokens (262400 specified)
+0.04.925.881 I 
+0.04.925.881 I system_info: n_threads = 8 (n_threads_batch = 8) / 16 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | REPACK = 1 | 
+0.04.925.881 I 
+0.05.327.206 I sampler seed: 4294967295
+0.05.327.206 I sampler params: 
+	repeat_last_n = 64, repeat_penalty = 1.000, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 64, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.000
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.05.327.206 I sampler chain: logits -> logit-bias -> ?penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> greedy 
+0.05.327.206 I generate: n_ctx = 262400, n_batch = 2048, n_predict = 64, n_keep = 1
+0.05.327.206 I 
+ model.
+<|channel>thoughts.
+<|channel>thought
+<channel|>The question of whether a "memory bus" exists for a Large Language Model (LLM) during long context inference is a nuanced one. To answer it accurately, we have to distinguish between the **physical hardware architecture** and the **logical data flow** of
+
+10.26.154.645 I common_perf_print:    sampling time =      56.67 ms
+10.26.154.645 I common_perf_print:    samplers time =      21.21 ms / 262208 tokens
+10.26.154.645 I common_perf_print:        load time =    3871.03 ms
+10.26.154.645 I common_perf_print: prompt eval time =  618486.17 ms / 262144 tokens (    2.36 ms per token,   423.85 tokens per second)
+10.26.154.645 I common_perf_print:        eval time =    2304.03 ms /    63 runs   (   36.57 ms per token,    27.34 tokens per second)
+10.26.154.645 I common_perf_print:       total time =  621228.69 ms / 262207 tokens
+10.26.154.645 I common_perf_print: unaccounted time =     381.81 ms /   0.1 %      (total - sampling - prompt eval - eval) / (total)
+10.26.154.645 I common_perf_print:    graphs reused =         62
+10.26.154.645 I common_perf_print:   graph reallocs =          0    /     0        (same size) / (changed size)

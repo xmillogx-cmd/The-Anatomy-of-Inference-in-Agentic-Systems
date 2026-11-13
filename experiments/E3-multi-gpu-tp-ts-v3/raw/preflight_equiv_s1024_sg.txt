@@ -1,0 +1,90 @@
+0.00.170.925 I llama_completion: llama backend init
+0.00.170.925 I llama_completion: load the model and apply lora adapter, if any
+0.01.479.027 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.01.479.027 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.01.497.139 W load: '</s>' is a normal token here, removing it from EOG list
+0.04.596.480 I cmn          init: llama threadpool init, n_threads = 8
+0.12.246.296 I 
+0.12.246.296 I system_info: n_threads = 8 (n_threads_batch = 8) / 16 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | REPACK = 1 | 
+0.12.246.296 I 
+0.12.247.298 I sampler seed: 4294967295
+0.12.247.298 I sampler params: 
+	repeat_last_n = 64, repeat_penalty = 1.000, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 64, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.000
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.12.247.298 I sampler chain: logits -> logit-bias -> ?penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> greedy 
+0.12.247.298 I generate: n_ctx = 1280, n_batch = 2048, n_predict = 64, n_keep = 1
+0.12.247.298 I 
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+Two graphics cards measure the memory bus of a large language model during long context inference.
+The quick brown fox jumps over the lazy dog while decoding tokens one by one.
+<|channel>thought
+<channel|>It appears your input contains a repetitive technical scenario regarding GPU performance, followed by a variation of the classic "Quick brown fox" pangram.
+
+To address the technical core of your repeated statement: **"Two graphics cards measure the memory bus of a large language model during long context inference."
+
+0.29.370.319 I common_perf_print:    sampling time =      27.35 ms
+0.29.370.319 I common_perf_print:    samplers time =      10.68 ms /  1088 tokens
+0.29.370.319 I common_perf_print:        load time =   11129.99 ms
+0.29.370.319 I common_perf_print: prompt eval time =   15288.66 ms /  1024 tokens (   14.93 ms per token,    66.98 tokens per second)
+0.29.370.319 I common_perf_print:        eval time =    1803.20 ms /    63 runs   (   28.62 ms per token,    34.94 tokens per second)
+0.29.370.319 I common_perf_print:       total time =   17124.96 ms /  1087 tokens
+0.29.370.319 I common_perf_print: unaccounted time =       5.76 ms /   0.0 %      (total - sampling - prompt eval - eval) / (total)
+0.29.370.319 I common_perf_print:    graphs reused =         62
+0.29.370.319 I common_perf_print:   graph reallocs =          0    /     0        (same size) / (changed size)
+EXIT=0 

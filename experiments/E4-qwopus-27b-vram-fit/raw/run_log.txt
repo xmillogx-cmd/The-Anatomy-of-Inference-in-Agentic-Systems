@@ -1,0 +1,24 @@
+[E4] run start 12.11.2026  5:24:29,53 
+[E4] 12.11.2026  5:25:23,93 preflight A OK: arch qwen35 loads, both perf lines present 
+[E4] 12.11.2026  5:25:24,13 preflight B OK: both GPUs free (see gpu_free.txt) 
+[E4] 12.11.2026  5:25:24,13 SG probe CMD: llama-completion -dev CUDA1 -c 768 -ctk f16 -ctv f16 -n 64 
+[E4] 12.11.2026  5:25:51,79 SG probe exit=0 
+[E4] 12.11.2026  5:25:51,80 SG VERDICT: FITS on one card 16 GB (unexpected - weights are 16.2 GiB
+[E4] 12.11.2026  5:25:51,80 SG VERDICT: FAILED with non-VRAM error - inspect e4_sg_s512_f16.txt 
+[E4] 12.11.2026  5:26:04,35 preflight C OK: PP smoke both cards (also the short-context tg/pp baseline) 
+[E4] 12.11.2026  5:26:04,35 GRID mode=pp S=131072 kv=f16 CMD: llama-completion -dev CUDA0,CUDA1 -sm layer -ctk f16 -ctv f16 -n 64 --ignore-eos 
+[E4] 12.11.2026  5:26:04,35 GRID mode=pp S=131072 kv=f16 exit=0 
+[E4] 12.11.2026  5:26:04,35 GRID mode=pp S=131072 kv=q8_0 CMD: llama-completion -dev CUDA0,CUDA1 -sm layer -ctk q8_0 -ctv q8_0 -n 64 --ignore-eos 
+[E4] 12.11.2026  5:26:04,35 GRID mode=pp S=131072 kv=q8_0 exit=0 
+[E4] 12.11.2026  5:32:09,77 GRID mode=pp S=262144 kv=f16 CMD: llama-completion -dev CUDA0,CUDA1 -sm layer -ctk f16 -ctv f16 -n 64 --ignore-eos 
+[E4] 12.11.2026  5:32:09,77 GRID mode=pp S=262144 kv=f16 exit=0 
+[E4] 12.11.2026  5:32:09,77 GRID mode=pp S=262144 kv=q8_0 CMD: llama-completion -dev CUDA0,CUDA1 -sm layer -ctk q8_0 -ctv q8_0 -n 64 --ignore-eos 
+[E4] 12.11.2026  5:32:09,77 GRID mode=pp S=262144 kv=q8_0 exit=0 
+[E4] 12.11.2026  6:04:54,07 TS probe CMD: llama-completion -dev CUDA0,CUDA1 -sm tensor -ts 1,1 -c 768 -n 64 
+[E4] 12.11.2026  6:05:05,56 TS probe exit=0 
+[E4q4] run start 12.11.2026 12:49:34,68 
+[E4q4] 12.11.2026 12:49:34,78 preflight B OK: both GPUs free 
+[E4q4] 12.11.2026 12:49:34,78 GRID mode=pp S=131072 kv=q4_0 CMD: llama-completion -dev CUDA0,CUDA1 -sm layer -ctk q4_0 -ctv q4_0 -n 64 --ignore-eos 
+[E4q4] 12.11.2026 12:49:34,78 GRID mode=pp S=131072 kv=q4_0 exit=0 
+[E4q4] 12.11.2026 12:49:34,78 GRID mode=pp S=262144 kv=q4_0 CMD: llama-completion -dev CUDA0,CUDA1 -sm layer -ctk q4_0 -ctv q4_0 -n 64 --ignore-eos 
+[E4q4] 12.11.2026 12:49:34,78 GRID mode=pp S=262144 kv=q4_0 exit=0 

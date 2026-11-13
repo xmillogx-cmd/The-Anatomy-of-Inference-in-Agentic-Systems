@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# Qwen Code session state
+.qwen/
+
+# Compiled llama.cpp runners — build artifacts (b11819 + mirror-KV patch, see README.md)
+runner-cuda/
+runner-patched/
+runner/
+
+# Upstream sources / scratch copies — re-download from GitHub releases b11819 if needed
+tmp-src/
+build-patched/
+src-llama-cpp-b11819/
+
+# Local arXiv mirror with its own .git and node_modules
+arxiv/
+
+# Runtime output of launchers run from preprint/code (experiments/*/raw hold the results)
+preprint/code/launchers/raw/

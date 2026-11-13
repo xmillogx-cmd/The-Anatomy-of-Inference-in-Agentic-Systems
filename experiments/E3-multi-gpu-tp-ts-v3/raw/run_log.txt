@@ -1,0 +1,34 @@
+[PF-A] run start 11.11.2026 17:15:35,31 
+[PF-A] run start 11.11.2026 17:50:38,76 
+[PF-A] 11.11.2026 17:51:20,34 step 1 OK: CPU smoke, both perf lines present 
+[PF-A] 11.11.2026 17:51:50,98 step 2 OK: SG run, both perf lines present (see preflight_equiv_s1024_sg.txt) 
+[PF-B] run start 11.11.2026 18:13:10,18 
+[PF-B] 11.11.2026 18:13:43,70 step 1 OK: CPU smoke, both perf lines present 
+[PF-B] 11.11.2026 18:13:57,88 step 2 OK: TS run, both perf lines present (see preflight_equiv_s1024_ts.txt) 
+[E3V3] run start 11.11.2026 19:34:40,01 
+[E3V3] 11.11.2026 19:35:20,91 preflight A OK: CPU smoke, both perf lines present 
+[E3V3] 11.11.2026 19:35:24,23 preflight B OK: token counts exact for both grid prompts 
+[E3V3] 11.11.2026 19:35:24,23 GRID mode=sg S=131072 kv=f16 r=1 CMD: llama-completion -dev VULKAN0 -ctk f16 -ctv f16 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 19:35:24,23 GRID mode=sg S=131072 kv=f16 r=1 exit=0 
+[E3V3] 11.11.2026 19:35:24,23 GRID mode=sg S=131072 kv=f16 r=2 CMD: llama-completion -dev VULKAN0 -ctk f16 -ctv f16 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 19:35:24,23 GRID mode=sg S=131072 kv=f16 r=2 exit=0 
+[E3V3] 11.11.2026 19:35:24,23 GRID mode=sg S=131072 kv=q8_0 r=1 CMD: llama-completion -dev VULKAN0 -ctk q8_0 -ctv q8_0 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 19:35:24,23 GRID mode=sg S=131072 kv=q8_0 r=1 exit=0 
+[E3V3] 11.11.2026 19:35:24,23 GRID mode=sg S=131072 kv=q8_0 r=2 CMD: llama-completion -dev VULKAN0 -ctk q8_0 -ctv q8_0 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 19:35:24,23 GRID mode=sg S=131072 kv=q8_0 r=2 exit=0 
+[E3V3] 11.11.2026 19:47:29,65 GRID mode=sg S=262144 kv=f16 r=1 CMD: llama-completion -dev VULKAN0 -ctk f16 -ctv f16 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 19:47:29,65 GRID mode=sg S=262144 kv=f16 r=1 exit=0 
+[E3V3] 11.11.2026 19:47:29,65 GRID mode=sg S=262144 kv=q8_0 r=1 CMD: llama-completion -dev VULKAN0 -ctk q8_0 -ctv q8_0 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 19:47:29,65 GRID mode=sg S=262144 kv=q8_0 r=1 exit=0 
+[E3V3] 11.11.2026 20:07:33,24 GRID mode=ts S=131072 kv=f16 r=1 CMD: llama-completion -dev VULKAN0,VULKAN1 -sm tensor -ts 1,1 -ctk f16 -ctv f16 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 20:07:33,24 GRID mode=ts S=131072 kv=f16 r=1 exit=0 
+[E3V3] 11.11.2026 20:07:33,24 GRID mode=ts S=131072 kv=f16 r=2 CMD: llama-completion -dev VULKAN0,VULKAN1 -sm tensor -ts 1,1 -ctk f16 -ctv f16 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 20:07:33,24 GRID mode=ts S=131072 kv=f16 r=2 exit=0 
+[E3V3] 11.11.2026 20:07:33,24 GRID mode=ts S=131072 kv=q8_0 r=1 CMD: llama-completion -dev VULKAN0,VULKAN1 -sm tensor -ts 1,1 -ctk q8_0 -ctv q8_0 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 20:07:33,24 GRID mode=ts S=131072 kv=q8_0 r=1 exit=0 
+[E3V3] 11.11.2026 20:07:33,24 GRID mode=ts S=131072 kv=q8_0 r=2 CMD: llama-completion -dev VULKAN0,VULKAN1 -sm tensor -ts 1,1 -ctk q8_0 -ctv q8_0 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 20:07:33,24 GRID mode=ts S=131072 kv=q8_0 r=2 exit=0 
+[E3V3] 11.11.2026 20:27:09,04 GRID mode=ts S=262144 kv=f16 r=1 CMD: llama-completion -dev VULKAN0,VULKAN1 -sm tensor -ts 1,1 -ctk f16 -ctv f16 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 20:27:09,04 GRID mode=ts S=262144 kv=f16 r=1 exit=0 
+[E3V3] 11.11.2026 20:27:09,04 GRID mode=ts S=262144 kv=q8_0 r=1 CMD: llama-completion -dev VULKAN0,VULKAN1 -sm tensor -ts 1,1 -ctk q8_0 -ctv q8_0 -n 64 --ignore-eos 
+[E3V3] 11.11.2026 20:27:09,04 GRID mode=ts S=262144 kv=q8_0 r=1 exit=0 

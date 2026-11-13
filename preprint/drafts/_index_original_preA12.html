@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Анатомия инференса LLM в агентской работе — пре-принт</title>
+<style>
+:root{
+  --ink:#17191c; --paper:#f8f7f4; --card:#ffffff; --line:#e3e0d6;
+  --accent:#d9480f; --accent-soft:#fff0e8; --teal:#0b7285; --teal-soft:#e6f4f7;
+  --ok:#2f9e44; --bad:#c92a2a; --muted:#6b6f76; --code-bg:#22242a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;font-size:16px;line-height:1.65}
+.page{max-width:1420px;margin:0 auto;display:grid;grid-template-columns:280px minmax(0,1fr);gap:36px;padding:0 24px}
+main{min-width:0;max-width:900px;width:100%;justify-self:center;padding-bottom:80px}
+
+/* ---------- hero ---------- */
+.hero{background:var(--ink);color:#f2f1ec;border-radius:14px;padding:44px 46px 36px;margin-top:28px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;top:-90px;right:-70px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(217,72,15,.35),transparent 65%)}
+.badge{display:inline-block;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:#ffb08a;border:1px solid rgba(255,176,138,.4);border-radius:999px;padding:4px 14px;margin-bottom:18px}
+.hero h1{font-size:clamp(1.7rem,3.4vw,2.6rem);line-height:1.2;font-weight:800;letter-spacing:-.01em}
+.hero h1 em{color:#ff9e6b;font-style:normal}
+.hero .sub{margin-top:16px;color:#c9ccd2;font-size:1.02rem;max-width:760px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.chip{font-size:.8rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#e6e7ea;border-radius:999px;padding:4px 12px}
+
+/* ---------- toc ---------- */
+.toc{position:sticky;top:24px;align-self:start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 18px;font-size:.86rem;margin-top:28px}
+.toc h3{font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:12px}
+.toc a{display:block;color:var(--ink);text-decoration:none;padding:4.5px 6px;border-radius:6px;line-height:1.35}
+.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+.toc .part{margin-top:12px;font-weight:700;color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.1em;padding-left:6px}
+
+/* ---------- sections ---------- */
+section{margin-top:56px}
+h2{font-size:1.55rem;font-weight:800;line-height:1.25;margin-bottom:18px;letter-spacing:-.01em}
+h2 .num{color:var(--accent);font-variant-numeric:tabular-nums}
+.part-banner{margin-top:72px;background:var(--ink);color:#fff;border-radius:12px;padding:26px 34px;display:flex;align-items:baseline;gap:18px}
+.part-banner .pn{font-size:.8rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#ff9e6b;white-space:nowrap}
+.part-banner h2{margin:0;font-size:1.5rem;color:#fff}
+h3{font-size:1.13rem;font-weight:700;margin:34px 0 12px}
+p{margin-bottom:14px}
+ul,ol{margin:0 0 16px 24px}
+li{margin-bottom:7px}
+strong{font-weight:700}
+a{color:var(--accent)}
+
+/* ---------- lead / tldr ---------- */
+.tldr{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;padding:24px 28px;margin-top:36px}
+.tldr h2{margin-bottom:14px;font-size:1.2rem}
+.tldr li{font-size:.97rem}
+
+/* ---------- requirement cards ---------- */
+.req-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0}
+.req-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 20px 18px;position:relative;break-inside:avoid}
+.req-card .big{font-size:2.3rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1}
+.req-card .unit{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:6px 0 12px}
+.req-card p{font-size:.88rem;margin-bottom:0;color:#3c4046}
+.req-card .anchor{display:block;font-size:.78rem;color:var(--teal);margin-top:10px;border-top:1px dashed var(--line);padding-top:9px}
+
+/* ---------- tables ---------- */
+.twrap{overflow-x:auto;margin:18px 0 22px;background:var(--card);border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:560px}
+th{background:#f1efe8;text-align:left;font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:#5a5e66;padding:10px 12px;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid #efece4;vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:hover{background:#fbfaf6}
+
+/* ---------- callouts ---------- */
+.note{background:var(--teal-soft);border-left:4px solid var(--teal);border-radius:8px;padding:14px 18px;margin:18px 0;font-size:.93rem;break-inside:avoid}
+.note b.tag{color:var(--teal)}
+.myth-box{background:#fff5f2;border:1px solid #ffc9b8;border-left:5px solid var(--bad);border-radius:10px;padding:18px 22px;margin:22px 0;break-inside:avoid}
+.myth-box .quote{font-size:1.06rem;font-weight:700;color:#a03420;margin-bottom:8px}
+.verdict{background:var(--ink);color:#f0efea;border-radius:12px;padding:26px 30px;margin:28px 0;break-inside:avoid}
+.verdict h3{margin-top:0;color:#ff9e6b;font-size:.8rem;text-transform:uppercase;letter-spacing:.16em}
+.verdict p{font-size:1.05rem}
+
+/* ---------- code / formulas ---------- */
+pre{background:var(--code-bg);color:#e8eaed;border-radius:10px;padding:18px 20px;margin:16px 0;overflow-x:auto;font-family:"JetBrains Mono",Consolas,"Cascadia Code",monospace;font-size:.84rem;line-height:1.55}
+code{font-family:"JetBrains Mono",Consolas,monospace;font-size:.86em;background:#efede6;border-radius:4px;padding:1px 5px;color:#7a3b12}
+pre code{background:none;padding:0;color:inherit}
+
+/* ---------- figures ---------- */
+figure{margin:22px 0;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;break-inside:avoid}
+figure img{width:100%;height:auto;border-radius:6px;display:block}
+figcaption{font-size:.83rem;color:var(--muted);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+
+/* ---------- stat cards (spark) ---------- */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center;break-inside:avoid}
+.stat .v{font-size:1.7rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat .l{font-size:.74rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:6px}
+.stat.win .v{color:var(--ok)}
+.stat.lose .v{color:var(--bad)}
+
+/* ---------- flow diagram (text) ---------- */
+.flow{background:#f4f2ec;border:1px dashed #d5d1c4;border-radius:10px;padding:18px 22px;margin:16px 0;font-family:"JetBrains Mono",Consolas,monospace;font-size:.85rem;line-height:1.7;white-space:pre-wrap}
+
+/* ---------- appendix links ---------- */
+.pkg{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0}
+.pkg a{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;text-decoration:none;color:var(--ink)}
+.pkg a:hover{border-color:var(--accent);background:var(--accent-soft)}
+.pkg .p{font-weight:700;font-size:.95rem;margin-bottom:4px}
+.pkg .d{font-size:.82rem;color:var(--muted)}
+
+footer{margin-top:70px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+/* ---------- responsive / print ---------- */
+@media (max-width:1100px){.page{grid-template-columns:1fr}.toc{display:none}}
+@media (max-width:760px){.req-grid,.stat-grid,.pkg{grid-template-columns:1fr 1fr}.hero{padding:32px 26px}}
+@media print{
+  body{background:#fff;font-size:11pt}
+  .page{display:block;max-width:none;padding:0}
+  .toc,.chips{display:none}
+  .hero{border-radius:0;margin-top:0;background:var(--ink)}
+  section{margin-top:28px;break-inside:auto}
+  h2,h3{break-after:avoid}
+  pre,figure,.tldr,.req-card,.stat,.myth-box,.verdict,tr{break-inside:avoid}
+  .part-banner{page-break-before:always;border-radius:0}
+  a{color:inherit;text-decoration:none}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc" aria-label="Оглавление">
+  <h3>Оглавление</h3>
+  <a href="#tldr">TL;DR — главное из замеров</a>
+  <a href="#req">§0 Правило 20 / 1к / 128к</a>
+  <div class="part">Часть I. Экосистема ПК</div>
+  <a href="#s1">1. Что течёт по шине GPU</a>
+  <a href="#s2">2. Три шины и где важна DDR5</a>
+  <a href="#s3">3. Одна карта: веса доминируют</a>
+  <a href="#s4">4. Prefill vs decode — два зверя</a>
+  <a href="#s5">5. Две карты и миф о PCIe</a>
+  <a href="#s6">6. Карта узких мест</a>
+  <div class="part">Часть II. Агентский контур</div>
+  <a href="#a1">1. Цикл: append-only контекст</a>
+  <a href="#a2">2. Контур слоя и где растёт KV</a>
+  <a href="#a3">3. Математика роста потока</a>
+  <a href="#a4">4. Таймлайн сессии S(t)</a>
+  <a href="#a5">5. Prefill O(S²) на растущей истории</a>
+  <a href="#a6">6. VRAM в окне и S*</a>
+  <div class="part">Заключение</div>
+  <a href="#myth">Миф «запустил — работает»</a>
+  <a href="#spark">Сетап против NVIDIA DGX Spark</a>
+  <a href="#appendix">Приложение: формулы и пакет</a>
+</nav>
+
+<main>
+
+<header class="hero">
+  <span class="badge">Пре-принт · 2026-11-12 · The Anatomy of Inference</span>
+  <h1>Анатомия инференса LLM<br>в агентской работе — <em>почему решает генерация, а не prefill</em></h1>
+  <p class="sub">Вопрос был простой: две RTX 5060 Ti за ~300к ₽ — потянут ли они агента? Ответ нашли через четыре эксперимента (E1–E4) и одну байт-формулу, которая предсказала каждый коллапс до запуска. Для нормальной агентской работы нужны <b>20+ токенов/с генерации, prefill ~1k+ и контекст 128к</b>. Всё остальное — размер модели, «триллион параметров на старом железе», скорость prefill в одиночку — вторично. Через всю статью ведутся три мысли: <b>параллелизм нужен, когда модель не влазит в одну карту — и тогда он полезен</b>; <b>не всегда дорого = лучше</b>; <b>понимание того, как это работает</b>, проверяется графиками и экспериментами. Цифры: 2× RTX 5060 Ti 16 GB GDDR7 + gemma-4 12B Q4_K_M (E1–E3) и Qwopus3.8-27B, который не влазит ни в одну карту (E4). Выводы C-01…C-21.</p>
+  <div class="chips">
+    <span class="chip">2× RTX 5060 Ti 16 GB GDDR7 (spec ~448 GB/s)</span>
+    <span class="chip">gemma-4 12B Q4_K_M · L=48: 40 SWA + 8 full · ctx 262k</span>
+    <span class="chip">llama.cpp d327bf1f CUDA/Vulkan + патч mirror-KV</span>
+    <span class="chip">BW_eff: 397.7 GB/s (CUDA) / 247.6 (Vulkan)</span>
+    <span class="chip">Qwopus3.8-27B Q4_K_M 16.2 GiB · E4 — не влазит в одну карту: PP/TS + MTP до 54 т/с</span>
+  </div>
+</header>
+
+<section id="tldr" style="margin-top:0">
+<div class="tldr">
+<h2>TL;DR — главное из замеров</h2>
+<p style="font-size:.93rem;color:#3c4046;margin-bottom:14px"><b>Три мысли, которые ведут статью:</b> (1) параллелизм нужен, когда модель <i>не влазит</i> в одну карту — и тогда он полезен; (2) не всегда дорого = лучше; (3) понимание того, как это работает — с графиками и экспериментами. Ниже — главное из замеров за 2 минуты чтения.</p>
+<ul>
+  <li><b>Decode = стриминг весов по шине памяти GPU.</b> Каждый токен читает ~6,73 GB весов + KV-кэш; AI ≈ 3.2 FLOP/байт — вычисления тут вообще не участвуют (C-01/C-02). Потолок задаёт GDDR7, не TFLOPS: «GPU при генерации — очень дорогая шина с процессором на конце». Отсюда весь §1 и вся байт-модель статьи.</li>
+  <li><b>В агентском цикле доминирует генерация, а не prefill.</b> Время шага = N_gen/tg + n_new/pp. На этом сетапе gen/prefill ≈ 50×, у NVIDIA DGX Spark — ≈900× (одна и та же ~27B модель в FP4, инпут ~130k): скорость prefill выше ~1k т/с время задачи почти не сокращает — она лишь ускоряет первый токен каждого шага.</li>
+  <li><b>Контекст растёт поток данных строго линейно: +16,384 байта на новую позицию (f16)</b> — ровно 8 глобальных слоёв × K+V [512] × 2 B; fit E1 воспроизводит наклон ×1.00 при R²=0.998. Цена контекста 131k на этом сетапе — всего ~27% генерации, tg остаётся выше порога 20 т/с.</li>
+  <li><b>Пересечение «KV догоняет веса» при S* ≈ 411,600 токенов</b> — за пределами окна gemma-4 (262k): в рабочем диапазоне веса доминируют, KV вторичен, но измерим с ~16k позиций (C-06/C-15). И рычаг до первого токена: финальное окно при загрузке (<code>--ctx-size</code>) резервирует KV сразу целиком — уменьшение окна держит всё на GPU и ускоряет старт (§a6).</li>
+  <li><b>Вторая карта нужна, когда модель не влазит в одну — и тогда она полезна.</b> На gemma-4 12B (влезает) при batch=1 мульти-GPU проигрывает: PP −4…−7% tg (сериализация), TS после патча mirror-KV — 0.38–0.49× SG во всех клетках, overhead ≈ 0.37–0.51 ms × 96 allreduces/token через host memory (C-18/C-21). На Qwopus3.8-27B E4 (веса 16.2 GiB &gt; 1 карты) параллелизм делает модель рабочей: PP — 22.14 т/с против 7.71 у тихого partial-offload'а (exit=0-ловушка), TS +68% → 37.39, а с MTP-слоями tg скачет до 54 при tg_3, в среднем 40+.</li>
+  <li><b>Итог: дорого ≠ лучше.</b> Агентский сетап — это не «огромная модель на старом железе», а генерация ≥20 т/с + контекст ≥128k. На одной и той же ~27B модели в FP4 (инпут ~130k) ПК за ~300к ₽ (2×5060 Ti, TP=2: ≈31 т/с на поток; max batch 3 → ≈45 т/с системой) бьёт NVIDIA DGX Spark за 900+к ₽ (≈9.5 т/с на тот же поток; batch=27 → ≈50 т/с системой в идеале) по времени реальной агентской задачи примерно втрое: шаг ≈49 с против ≈160 с.</li>
+</ul>
+</div>
+</section>
+
+<section id="req">
+<h2><span class="num">§0</span> Три требования агентского инференса: правило <b style="color:var(--accent)">20 / 1к / 128к</b></h2>
+<p>Чат-ассистент и агент — это разные режимы, и разница видна с первого шага. В чате пользователь ждёт первый токен после одного длинного prefill. Агент так не живёт: он делает сотни шагов «модель → инструмент → модель». На каждом шаге модель читает результат инструмента (это <b>инкрементальный prefill</b> — новые токены) и думает, что делать дальше (<b>генерация</b>). И вот тут ловушка: время задачи определяет не одна метрика, а их сочетание. Я замерил все три метрики на своём сетапе и получил три жёстких требования:</p>
+
+<div class="req-grid">
+  <div class="req-card">
+    <div class="big">20+</div>
+    <span class="unit">токенов/с генерации</span>
+    <p><b>Агент живёт генерацией.</b> Шаг T = N_gen/tg + n_new/pp: при N_gen=1500 и tg=20 чистая генерация шага — уже 75 с. Ниже порога задача превращается в часовые процессы; выше — интерактивна. Этот сетап держит порог на всём диапазоне контекста.</p>
+    <span class="anchor">Якорь: E1 CUDA tg f16 = 44.7 т/с @32k, 34.8 т/с @131k (E3 v2)</span>
+  </div>
+  <div class="req-card">
+    <div class="big">~1к</div>
+    <span class="unit">токенов/с prefill — и выше</span>
+    <p><b>Prefill нужен «достаточно быстрый».</b> Новые токены каждого шага проходят инкрементальный prefill: n_new=1000 при ~1k т/с = +1 с на шаг (~2% времени). Выше ~1k скорость prefill почти не окупается — gen/prefill ≈ 50× на этом ПК и ≈900× у Spark (5.7k т/с экономит лишь доли секунды каждого шага).</p>
+    <span class="anchor">Якорь: E2 pp f16 = 687–1436 т/с в зависимости от контекста (одна карта CUDA)</span>
+  </div>
+  <div class="req-card">
+    <div class="big">128к</div>
+    <span class="unit">контекст — минимум</span>
+    <p><b>Без длинного окна агент забывает, что делал.</b> Каждый шаг дописывает ответ + вывод инструмента: через 3–4 шага короткое окно (8–16k) переполняется и контекст сжимается/теряется. Цена 128k измерена — она мала по сравнению с выгодой.</p>
+    <span class="anchor">Якорь: @S=131k tg = 34.8 т/с (≥ порога), bytes/token = 9.22 GB, KV = 2.31 GiB — влезает в 16 GB</span>
+  </div>
+</div>
+
+<p>Чтобы пороги не висели в воздухе — типовой агентский шаг: <b>N_gen = 1500 токенов генерации</b>, <b>n_new = 1000 новых префилл-токенов</b>. Формула шага — T = N_gen/tg + n_new/pp. Три системы, одна и та же ~27B модель в FP4, инпут ~130k:</p>
+<div class="twrap">
+<table>
+<thead><tr><th>Система (цена)</th><th class="num">tg, т/с</th><th class="num">pp, т/с</th><th class="num">Генерация шага</th><th class="num">Prefill шага</th><th class="num">Итого шаг</th><th class="num">gen / prefill</th></tr></thead>
+<tbody>
+<tr><td>Старое железо, «триллионная модель» (~2024)</td><td class="num">13</td><td class="num">10</td><td class="num">115 с</td><td class="num">100 с</td><td class="num"><b>215 с (3.6 мин)</b></td><td class="num">1.2×</td></tr>
+<tr><td>NVIDIA DGX Spark (~900+к ₽)</td><td class="num">9.5</td><td class="num">5,700</td><td class="num">158 с</td><td class="num">0.2 с</td><td class="num"><b>≈160 с (2.6 мин)</b></td><td class="num">900×</td></tr>
+<tr><td>ПК: 2× RTX 5060 Ti 16 GB (~300к ₽)</td><td class="num">31</td><td class="num">~1,100</td><td class="num">48 с</td><td class="num">0.9 с</td><td class="num"><b>≈ 49 с</b></td><td class="num">50×</td></tr>
+</tbody>
+</table>
+</div>
+<p>Что видно в таблице: в агентском цикле <b>время шага — это время генерации</b>, за исключением систем, где медленный prefill тоже добавляет минуты. Prefill 5.7k т/с у Spark окупается на доли секунды каждого шага; gen ≈9.5 т/с против ≈31 т/с на этом ПК проигрывает ~2 минуты на каждом шаге — и это при цене втрое выше. Задачу из 20 шагов этот ПК делает за ~16 минут, Spark — за ~53, а «триллионное» старое железо — больше часа <i>и</i> забывает контекст через 3–4 шага (это миф, который разберётся в заключении).</p>
+<div class="note"><b class="tag">Почему именно эти пороги.</b> Порог генерации 20 т/с — граница «человек успевает читать, агент не ждёт»: при 1500 токенах на шаг это ≤75 с интерактивного цикла. Prefill ~1k т/с — граница, после которой вклад prefill в время шага &lt;3% и дальнейший рост бесполезен для wall-clock. Контекст 128k — минимум, чтобы 3–4 шага агента (ответ + инструменты по ~5–10k токенов) помещались без потери памяти о задаче. Все три порога не выдуманы: каждый опирается на замер в этой статье.</div>
+</section>
+
+<div class="part-banner" id="p1"><span class="pn">Часть I</span><h2>Экосистема ПК: что реально течёт по шинам</h2></div>
+
+<section id="s1">
+<h2><span class="num">§1</span> Что течёт по шине памяти GPU при генерации</h2>
+<p>Первый вопрос — что вообще происходит с данными, когда модель генерирует один токен? Ответ оказался проще и жёстче любых ожиданий. При decode (batch=1) каждый новый токен требует прочитать с VRAM <b>все веса модели</b> — целиком, на каждом токене, — и кроме того KV-кэш: по одному байту на каждую уже существующую позицию контекста. Поток данных на токен:</p>
+<pre><code>bytes/token(S) = W + Σₗ KV_read(л)
+
+  слой full attention:   S · (2·kv_dim) · e        — читает всю историю
+  слой sliding window:   min(S, окно) · (2·kv_dim) · e   — только последние 1024 позиций
+</code></pre>
+<p>Константы для gemma-4 Q4_K_M я не брал из документации, а вычитал парсингом самого GGUF (<span class="chip" style="background:none;border-color:var(--line);color:var(--muted)">parse_gguf.py в пакете code/</span>): L=48 = 40 SWA-слоёв (окно 1024, kv_dim 2048) + ровно 8 глобальных full-слоёв (kv_heads=1, head_dim 512). Именно эти 8 слоёв читают всю историю — отсюда весь наклон роста потока ниже:</p>
+<div class="twrap">
+<table>
+<thead><tr><th>Константа (f16 KV)</th><th class="num">Значение</th><th>Откуда</th></tr></thead>
+<tbody>
+<tr><td>W — веса, читаемые на токен</td><td class="num"><b>6,733,551,580 B ≈ 6.28 GiB</b></td><td>P_gemm = 10,899,947,520 × 0.61776 B/параметр (Q4_K_M)</td></tr>
+<tr><td>∂bytes/∂S — наклон роста потока</td><td class="num"><b>+16,384 B/позиция</b></td><td>8 глобальных слоёв × (512+512) × 2 B; SWA-слои в окне дают 0</td></tr>
+<tr><td>c_swa — вклад окна при S ≥ 1024</td><td class="num">335,544,320 B ≈ 320 MiB</td><td>40 слоёв × 1024 × (2×2048) × 2 B — константа после окна</td></tr>
+<tr><td>KV @ S=131k / S=262k</td><td class="num">2,483,027,968 B (2.31 GiB) / 4,630,511,616 B (4.31 GiB)</td><td>полный кэш: SWA-окна + глобальные строки</td></tr>
+<tr><td>Intercept: W + c_swa</td><td class="num">7,069,095,900 B</td><td>поток на токен от весов + заполненных окон SWA — константа, не растёт с S</td></tr>
+<tr><td>bytes/token(S) @ S=1k / 131k / 262k</td><td class="num">7,085,873,116 / <b>9,216,579,548</b> / 11,364,063,196 B</td><td>W + c_swa + S×16,384 (S ≥ окна)</td></tr>
+</tbody>
+</table>
+</div>
+<p>Почему это решает всё: арифметическая интенсивность decode — AI = FLOPs/байт ≈ 2·P_gemm / bytes/token ≈ <b>3.2 FLOP/B</b>. На RTX 5060 Ti соотношение пиковых производительностей (TFLOPS ÷ GB/s) на порядки выше этой границы — токен-генерация никогда не упирается в вычисления, только в шину: <b>C-01/C-02 — decode всегда memory-bound</b>. Потолок скорости задаётся одной формулой:</p>
+<pre><code>tg_max(S) = BW_eff ÷ bytes/token(S)</code></pre>
+<div class="note"><b class="tag">Суть.</b> GPU при генерации — это очень дорогая шина с процессором на конце. Покупать «TFLOPS для чата» бессмысленно: решает GB/s памяти карты, по которой стримятся веса + KV. Эта формула ниже проверяется замерами (E1) и работает как модель во всей статье — включая предсказание коллапсов в E4 до их запуска.</div>
+</section>
+
+<section id="s2">
+<h2><span class="num">§2</span> Три шины компьютера и где важна DDR5</h2>
+<p>Шин в компьютере больше одной, и разница между ними — 10–40×. Это первое место, где «дорого = быстро» перестаёт работать: можно купить отличную память DDR5, а агенту от этого не станет ни на токен быстрее. Эффективные пропускные способности всех трёх шин замерены на этой машине:</p>
+<div class="twrap">
+<table>
+<thead><tr><th>Шина</th><th class="num">Spec, GB/s</th><th class="num">Измерено (BW_eff), GB/s</th><th>Чем нагружена в инференсе</th></tr></thead>
+<tbody>
+<tr><td>GDDR7 (RTX 5060 Ti)</td><td class="num">~448</td><td class="num"><b>397.7</b> CUDA / <b>247.6</b> Vulkan</td><td>стриминг весов + KV при decode — главная шина</td></tr>
+<tr><td>PCIe Gen4 x16 (карта ↔ CPU)</td><td class="num">≥32</td><td class="num">~35.5/GPU в ThunderEP-замере</td><td>мульти-GPU синхронизация, загрузка весов, offloading</td></tr>
+<tr><td>DDR5 (системная память)</td><td class="num">50–90 dual-ch.</td><td class="num">—</td><td>CPU-offload слоёв, host-буферы allreduce, KV offloading</td></tr>
+</tbody>
+</table>
+</div>
+<p>Kalman et al. (arXiv:2601.19910) показывают то же самое на другом железе: на L=48/32k <b>75–86% времени GPU уходит в PCIe-синхронизацию, а не вычисления</b>. Это видно в §5 — когда вторая карта начала «помогать» сериализацией. Три сценария, где DDR5 и PCIe становятся узким местом:</p>
+<ul>
+<li><b>Загрузка модели.</b> GGUF 7.38 GB: по PCIe x16 — ~240 мс, через NVMe → RAM → GPU — секунды. Разовая цена, не влияет на agent-loop.</li>
+<li><b>CPU-offload слоёв</b> (<code>-ot cpu -dev CUDA</code>): каждый токен читает offloaded-слои из DDR5 (30–70 GB/s против 400+ у GDDR7). На «старом железе» с малой VRAM — именно это делает tg 13 т/с, а не размер модели.</li>
+<li><b>KV offloading</b>: при переполнении VRAM кэш уходит в RAM; decode продолжает работать, но поток KV идёт через DDR5. Для агентских задач с длинным контекстом это единственный способ «влезть», цена — потерянные десятки % tg (см. §4 Части II).</li>
+</ul>
+<div class="note"><b class="tag">Вывод.</b> Для agent-loop важна одна шина — GDDR7 карты, на которой живут веса+KV. DDR5 и PCIe важны только когда что-то не влезает в VRAM: тогда они и определяют потолок скорости. «Больше RAM = быстрее» — миф; больше VRAM на нужной карте = быстрее.</div>
+</section>
+
+<section id="s3">
+<h2><span class="num">§3</span> Одна карта: веса доминируют (пока)</h2>
+<p>E1 — первый замер проекта: tg против глубины контекста S на одной 5060 Ti при трёх уровнях KV-квантования (f16/q8_0/q4_0). Формула §1 прошла проверку: fit «теория E1» (W + c_swa + S×16,384) воспроизводит наклон <b>×1.00 при R² = 0.998</b>. Байт-модель оказалась не гипотезой, а точным описанием того, что происходит в шине. Три факта из этого замера:</p>
+<ol>
+<li><b>Веса доминируют во всём рабочем диапазоне.</b> Пересечение «KV догоняет веса» (S*): W ÷ 16,384 ≈ <b>411,600 токенов</b> — за пределами окна gemma-4 (262k). До ~16k позиций KV-эффект вообще невидим; падение tg f16 от 1k до 32k = −7.0% (C-06/C-15).</li>
+<li><b>KV-квантование — чистый минус при S ≤ 32k</b> (C-12). Попытка сэкономить на шине через KV-квантование обошлась дороже: эффективная цена позиции q8_0 = 30,322 B против теоретических 8,704 (<b>×3.48</b>), q4_0 — 26,994 против 4,608 (<b>×5.86</b>). Dequant-накладные расходы съедают экономию на шине. При S ≥ 131k картина меняется (C-19: ratio tg PP/SG q8 = 0.771 vs f16 0.724) — но это уже другая глава (§a6).</li>
+<li><b>VRAM — не узкое место.</b> Даже @S=262k f16 влезает с запасом:</li>
+</ol>
+<div class="twrap">
+<table>
+<thead><tr><th>S, токенов</th><th class="num">Веса (Q4_K_M)</th><th class="num">KV-кэш (f16)</th><th class="num">Итого VRAM</th><th class="num">Запас на 16 GB</th></tr></t... [truncated]
+<tbody>
+<tr><td>1k</td><td class="num">7.4 GiB</td><td class="num">0.38 GiB</td><td class="num"><b>7.5 GiB</b></td><td class="num">≈ 8.5 GiB</td></tr>
+<tr><td>131k</td><td class="num">7.4 GiB</td><td class="num">2.31 GiB</td><td class="num"><b>9.7 GiB</b></td><td class="num">≈ 6.1 GiB</td></tr>
+<tr><td>262k (весь ctx)</td><td class="num">7.4 GiB</td><td class="num">4.31 GiB</td><td class="num"><b>11.7 GiB</b></td><td class="num">≈ 4.1 GiB</td></tr>
+</tbody>
+</table>
+</div>
+<p>Вывод: на одной карте 16 GB «влезть» — не проблема, «быстро» — вопрос шины. Весь 262k контекста f16 помещается; скорость при этом — 34.8 т/с @131k (E3 v2) и ~27 т/с @262k (E3 v3 Vulkan), оба выше порога 20 из §0.</p>
+<figure><img src="images/e1-kv-tg-vs-context.png" alt="e1-kv-tg-vs-context"><figcaption><b>E1 — tg(S) по уровням KV-квантования, одна карта CUDA (f16: 48.08→44.73 т/с от 1k до 32k).</b> Fit «теория E1» совпадает с наклонной ×1.00 при R²=0.998; q8_0/q4_0 — ниже f16 во всём диапазоне S≤32k (чистый минус, C-12).</figcaption></figure>
+</section>
+
+<section id="s4">
+<h2><span class="num">§4</span> Prefill и decode — два разных зверя</h2>
+<p>Prefill обрабатывает весь входной контекст параллельно (batch = длина), поэтому он живёт по законам вычислений, а не шины: чем длиннее контекст, тем больше работы на токен. Измеренная картина (E2, одна карта CUDA):</p>
+<div class="twrap">
+<table>
+<thead><tr><th>S, токенов</th><th class="num">pp, т/с (f16)</th><th class="num">Эфф. TFLOPS</th><th>Комментарий</th></tr></thead>
+<tbody>
+<tr><td>65k</td><td class="num"><b>1435.59</b></td><td class="num">44.6</td><td rowspan="3">C-13: pp падает с ростом S — full-attn O(S²) и рост KV-трафика в prefill; KV-кванты дают −1.5…−2% (C-14)</td></tr>
+<tr><td>131k</td><td class="num">1053.55</td><td class="num">41.8</td></tr>
+<tr><td>262k</td><td class="num">686.94</td><td class="num">39.1</td></tr>
+</tbody>
+</table>
+</div>
+<p>Cold prefill @131k = <b>5,196,755,473,793,024 FLOP</b>, из них full-attention O(S²) — 2.252e15 (43%), SWA — 87.6e12: длинный контекст делает prefill квадратично дороже (это разобрано в §5 Части II). Звучит страшно, но для агента это не страшно: cold prefill бывает один раз на задачу. Каждый шаг — это <b>инкрементальный</b> prefill только новых токенов (~n_new) поверх готового кэша, и он стоит n_new/pp секунд: при pp=900 и n_new=1000 — 1.1 с против ~33 с генерации на том же шаге. Именно поэтому §0 ставит порогу prefill «~1k и выше», а не «максимум».</p>
+<figure><img src="images/e2-prefill-tps-vs-context.png" alt="e2-prefill-tps-vs-context"><figcaption><b>E2 — pp(S), одна карта CUDA f16 (1435.59→686.94 т/с от 65k до 262k).</b> Prefill быстрее decode в ~30× при коротком контексте и ещё быстрее на длинном — но именно поэтому он не решает время агентской задачи.</figcaption></figure>
+</section>
+
+<section id="s5">
+<h2><span class="num">§5</span> Две карты и миф о PCIe</h2>
+<p>На этом месте обычно начинается разговор «а вот если две карты?». Оба режима мульти-GPU — pipeline parallelism (PP) и tensor split (TS) — проверены на двух 5060 Ti по consumer PCIe. Ответ оказался двусторонним, и это важнее любого однозначного «да/нет»: всё зависит от того, влезает ли модель в одну карту.</p>
+
+<h3>§5.1 PP: prefill растёт, decode — нет</h3>
+<p>E3 v2 (CUDA, grid S×K): слои режутся пополам, карты работают последовательно. Prefill получает параллелизм batch'а → <b>pp ×1.63–1.65</b>; а вот decode при batch=1 сериализуется: каждая карта ждёт другую, tg <b>−4…−7%</b> против одной карты (C-18). Байты PCIe на токен малы — L·2·d_model·e = 7,680 B/token @N=2 — но это 96 круговых поездок через host memory на каждый токен. Мелкие пакеты + PCIe-латентность: именно так выглядит «помощь», которая мешает.</p>
+
+<h3>§5.2 Случай x2→x4: почему «больше карт» не помогло</h3>
+<p>В проекте был реальный кейс: добавление карты в TS-режим (x2 → x4) дало рост prefill, но decode упал. Механизм измерен в E3 v3: при TS каждый слой делает 2 allreduce на токен × L=48 = <b>96 allreduces/token</b>, и они идут через host memory (PCIe), а не NVLink — последнего здесь физически нет. Замер overhead: <b>+35.7…+48.8 ms/токен ≈ 0.37–0.51 ms × 96 allreduce</b>. При этом реальный throughput PCIe в таких микросообщениях — ~35.5 GB/s/GPU (ThunderEP-замер): <b>узкое место не пропускная способность шины, а латентность и доступность линий</b>. Добавление карт добавляет allreduces быстрее, чем добавляет BW — decode деградирует.</p>
+
+<h3>§5.3 TS: краш C-17 → патч mirror-KV → честный замер</h3>
+<p><code>-sm tensor</code> на gemma-4 детерминированно крашился в upstream (C-17): у глобальных слоёв n_head_kv=1 &lt; n_devices, а per-row qk-norm требует полный вектор. Патч ~20 строк (блок <code>GEMMA4</code> в llama-model.cpp L543–L563, исходник — <span class="chip" style="background:none;border-color:var(--line);color:var(--muted)">code/mirror-kv-patch.md в пакете</span>) делает KV таких слоёв MIRRORED — E3 v3 отработал. А честный результат оказался неприятным для gemma-4: <b>tg 0.38–0.49× SG во всех клетках grid</b> (C-21) — TS хуже одной карты везде; prefill выигрывает только на S=1k (5.4×). Эффективность против BW-потолка 23–43%: синхронизация съедает остальное.</p>
+
+<h3>§5.4 Вердикт мульти-GPU — случай «влезает»</h3>
+<div class="twrap">
+<table>
+<thead><tr><th>Режим (2 карты, batch=1)</th><th class="num">Prefill</th><th class="num">Decode (tg)</th></tr></thead>
+<tbody>
+<tr><td>PP (E3 v2)</td><td class="num" style="color:var(--ok)">×1.63–1.65</td><td class="num" style="color:var(--bad)">−4…−7%</td></tr>
+<tr><td>TS + mirror-KV (E3 v3)</td><td class="num">0.61–0.74× на длинном S; 5.4× @S=1k</td><td class="num" style="color:var(--bad)">0.38–0.49× SG</td></tr>
+</tbody>
+</table>
+</div>
+<p>Итог для gemma-4 12B однозначен: модель влезает в одну карту → при batch=1 вторая карта платит за синхронизацию, и выигрывает только prefill. Но это — только половина ответа.</p>
+
+<h3>§5.5 Когда не влазит: Qwopus3.8-27B на двух картах (E4)</h3>
+<p>Gemma-4 12B — случай «влезает». Теперь противоположный, и он всё переворачивает: <b>Qwopus3.8-27B-Coder-Flash-Q4_K_M = 16.2 GiB весов — больше одной карты ещё до KV</b>. arch=qwen35, hybrid: 65 блоков, full-attn только в 17 из них (interval 4), нативный контекст 262k. Три режима на коротком окне S=512:</p>
+<div class="twrap">
+<table>
+<thead><tr><th>Режим</th><th class="num">pp, т/с</th><th class="num">tg, т/с</th><th>Что это значит</th></tr></thead>
+<tbody>
+<tr><td>SG — одна карта CUDA1</td><td class="num">54.12</td><td class="num" style="color:var(--bad)">7.71</td><td><b>exit=0-ловушка:</b> веса не влезли, llama.cpp молча partial-offload'нул часть в RAM — фактический OOM с успешным кодом</td></tr>
+<tr><td>PP — слои пополам на двух картах</td><td class="num">627.84</td><td class="num"><b>22.14</b></td><td>истинный базлайн: модель рабочая, ×2.9 к ловушке</td></tr>
+<tr><td>TS — tensor parallel (-sm tensor -ts 1,1)</td><td class="num">745.48</td><td class="num" style="color:var(--ok)"><b>37.39</b></td><td>+68% к PP; патч mirror-KV переносится на qwen35 (warning про llama_params_fit не фатален)</td></tr>
+</tbody>
+</table>
+</div>
+<p>Обратите внимание на первый ряд: одна карта «работает» — exit=0, модель отвечает, — но tg 7.71 т/с против истинного базлайна 22.14. Поймал это случайно: сначала подумал, что прогон просто медленный. Оказалось — auto-fit билда (<code>common_fit_params</code>) превращает «модель не влезла» в тихий partial-offload части весов в RAM. Это фактический OOM с успешным кодом выхода. Проверять «влезает/не влазит» надо offload-долей или замером tg/pp против ожидаемого базлайна, а не кодом выхода.</p>
+<p><b>MTP-слои — отдельная история.</b> Раннер llama.cpp проекта их игнорирует («model has unused tensor blk.64.*», ~239 MB), но прогон с раннером, который поддерживает nextn/MTP поверх того же tensor split, показал: tg скачет до 54 при tg_3 и в среднем держит 40+ (короткое окно). Замер отмечен на графике ниже отдельным маркером. Вывод для этой модели однозначен: тензер сплит не просто работает — он прямо помогает.</p>
+<p><b>KV-квантизация решает «влезает ли» на длинных окнах</b> (грид PP, S=131k/262k). Сначала грид был без q4-ячеек — и это оказалось пропуском: именно они дали и dequant-налог на 131k, и единственное чистое влезание полного окна. @131k всё влезает даже f16 — tg 15.26 / q4_0 13.95 / q8_0 12.87 т/с (dequant-налог −8…−15%, тот же минус C-12); @262k f16 KV ≈ 8.5 GiB на карту + веса — не влезает, tg коллапсирует до <b>0.74</b> (TPOT 1357 ms), q8_0 держится (8.30) с reallocs=512, а <b>q4_0 KV — единственный чистый прогон полного окна: pp 697 / tg 10.02, graph reallocs=0</b>. И главное: байт-модель предсказала это до запуска. KV f16 = 17×4×256×2(K+V)×2 B ≈ 69,632 B/позицию → @262k ≈ 18.3 GB суммарно — больше двух карт вместе взятых по VRAM-бюджету одного потока. Если же сессия не живёт в 262k — есть и третий выход, кроме квантования KV и параллелизма: просто уменьшить финальное окно при загрузке (§a6) — резерв под ненужное окно съедает VRAM впустую.</p>
+<figure><img src="images/e4-qwopus-27b-vram-fit.png" alt="e4-qwopus-27b-vram-fit"><figcaption><b>E4 — Qwopus3.8-27B (16.2 GiB) на 2× RTX 5060 Ti: PP-грид KV × контекст + режимы.</b> SG = exit=0-ловушка; TS работает на qwen35 (+68% к PP); ★ — замер пользователя TS+MTP (до 54 т/с при tg_3, в среднем 40+, короткое окно). f16 KV @262k коллапсирует ×21 к 131k; q4_0 KV — единственный чистый прогон полного окна.</figcaption></figure>
+<div class="verdict"><h3>Вердикт §5</h3><p>Правильный вопрос про вторую карту — не «даст ли она скорость», а <b>«влезает ли модель в одну карту»</b>. Влезает (gemma-4 12B) → при batch=1 вторая карта платит за синхронизацию: PP −4…−7% tg, TS 0.38–0.49× SG — decode memory-bound по шине GDDR7, PCIe лишь добавляет allreduce-накладных; <b>262k контекста f16 + запас VRAM на одной карте</b> ценнее второй карты. Не влезает (Qwopus 27B, E4) → параллелизм не роскошь, а условие работы: PP делает модель рабочей (22.14 против 7.71 т/с у тихого partial-offload), TS даёт максимум скорости (+68%), с MTP-слоями — до 54 т/с при tg_3. <b>Параллелизм нужен, когда не влазит. И это полезно.</b></p></div>
+<figure><img src="images/e3v2-pp-two-cards.png" alt="e3v2-pp-two-cards"><figcaption><b>E3 v2 — PP против SG: tg и pp по grid S×K, CUDA (tg −4…−7%, pp ×1.63–1.65, C-18).</b></figcaption></figure>
+<figure><img src="images/e3v3-ts-mirror-kv.png" alt="e3v3-ts-mirror-kv"><figcaption><b>E3 v3 — TS с патчем mirror-KV против SG: tg 0.38–0.49× во всех клетках (C-21).</b></figcaption></figure>
+</section>
+
+<section id="s6">
+<h2><span class="num">§6</span> Карта узких мест ПК-экосистемы</h2>
+<p>Всё, что замерено в Части I, помещается в одну таблицу: где что упирается, по какой шине и что это значит для агентского инференса.</p>
+<div class="twrap">
+<table>
+<thead><tr><th>Фаза / режим</th><th>Узкое место</th><th>Шина</th><th>Что помогает</th></tr></thead>
+<tbody>
+<tr><td>Decode (batch=1)</td><td>GDDR7 BW — стриминг весов+KV</td><td>GDDR7 ~400 GB/s eff.</td><td>быстрая память на карте; кванты весов (меньше W); <b>не</b> KV-кванты при S≤32k</td></tr>
+<tr><td>Prefill / cold prompt</td><td>TFLOPS карты + O(S²) full-attn</td><td>—</td><td>быстрая карта; короткие контексты на шаг (инкрементальный prefill)</td></tr>
+<tr><td>Загрузка модели</td><td>NVMe → RAM → PCIe</td><td>PCIe x16 ~32 GB/s</td><td>разовая цена, не оптимизировать</td></tr>
+<tr><td>CPU-offload слоёв</td><td>DDR5 BW (30–70 GB/s)</td><td>DDR5</td><td>минимум offload; больше VRAM на карте</td></tr>
+<tr><td>KV offloading при переполнении</td><td>DDR5 + PCIe roundtrip</td><td>PCIe/DDR5</td><td>длинное окно влезает в VRAM (128k — 9.7 GiB, §3)</td></tr>
+<tr><td>Мульти-GPU PP — модель влазит в 1 карту</td><td>сериализация decode + PCIe-поездки</td><td>PCIe ~35 GB/s eff.</td><td>только prefill ×1.6+; для agent-loop не помогает — <b>кроме случая «не влазит»: тогда PP делает модель рабочей (E4)</b></td></tr>
+<tr><td>Мульти-GPU TS — модель влазит в 1 карту</td><td>96 allreduces/token через host memory</td><td>PCIe, латентность линий</td><td>не помогает вовсе (0.38–0.49× SG) — <b>кроме случая «не влазит»: на Qwopus 27B + MTP до 54 т/с (E4)</b></td></tr>
+</tbody>
+</table>
+</div>
+<p>Вывод Части I: <b>агентский инференс на ПК упирается в одну шину — GDDR7 карты, где живут веса+KV.</b> Всё остальное (PCIe, DDR5, вторая карта) начинает решать только тогда, когда что-то не влезает или синхронизируется. Отсюда и правило §0: генерация ≥20 т/с — это вопрос BW памяти; контекст 128k — вопрос VRAM на той же карте.</p>
+</section>
+
+<div class="part-banner" id="p2"><span class="pn">Часть II</span><h2>Агентский контур: как поток данных растёт во времени в окне</h2></div>
+
+<section id="a1">
+<h2><span class="num">§1</span> Цикл агента: append-only контекст и две фазы с разным ростом</h2>
+<p>Часть I разбирала железо. Теперь — что происходит внутри одной агентской сессии во времени. Агентская работа — это не один запрос, а цикл. И у него есть свойство, которое всё определяет: контекст растёт только в одном направлении (append-only) — его нельзя «очистить» без потери смысла задачи:</p>
+<div class="flow">шаг k:  S ──► [генерация N_gen токенов] ──► S' = S + N_gen
+        S' ──► [вызов инструмента]          ──► n_new новых токенов (вывод)
+        S' ──► [инкрементальный prefill n_new] ──► готовый кэш для шага k+1</div>
+<p>Поток данных растёт двумя фазами с разными законами:</p>
+<ul>
+<li><b>Внутри генерации (шаг)</b>: каждый сгенерированный токен добавляет +16,384 B к bytes/token следующего. При N_gen=512 и S=131k суммарный рост за шаг — <b>+0.09%</b> — пренебрежимо мал: tg внутри шага почти постоянен.</li>
+<li><b>Между шагами (прыжок)</b>: после генерации контекст скачком увеличивается на N_gen + n_new позиций; следующий prefill читает всю новую историю. Именно здесь «цена» длинного контекста накапливается — линейно, по 16,384 B/позицию навсегда.</li>
+</ul>
+<p>Следствие для §0: время задачи = Σ_k (N_gen/tg(S_k) + n_new/pp). tg(S_k) падает с ростом S_k — но на этом сетапе даже при 131k оно остаётся выше порога 20 т/с. Без длинного окна задача не решается и по смыслу: агент через 3–4 шага перестаёт помнить, что делал.</p>
+</section>
+
+<section id="a2">
+<h2><span class="num">§2</span> Контур слоя: где именно растёт KV</h2>
+<p>Чтобы наклон +16,384 B/позицию не был просто числом из таблицы — внутри одного слоя gemma-4 (llama.cpp <code>gemma4.cpp</code>, L201–397), упрощённо:</p>
+<pre><code>x ──► attn_norm ──► q_proj ──► RoPE(q)
+                    k_proj ─┐        ┌──► attention( Q, K_cache[0..S], V_cache[0..S] )  [full-слой: вся история]
+                    v_proj ─┤ append ┘     или attention( Q, K_cache[S−1023..S], … )    [SWA-слой: последние 1024 позиций]
+                            │ K,V ──► o_proj ──► + x (residual) ──► ffn_norm ──► ffn ──► + x</code></pre>
+<p>Два нюанса, которые определяют наклон роста — оба легко пропустить при чтении документации:</p>
+<ul>
+<li><b>V — алиас K.</b> У глобальных слоёв gemma-4 нет отдельного тензора <code>attn_v.weight</code>: проекция V совпадает с K. Но в KV-кэше всё равно живут <b>две отдельные строки на позицию</b> (K и V) — attention читает обе.</li>
+<li><b>Только 8 слоёв читают всю историю.</b> 40 SWA-слоёв после окна дают константу c_swa; растёт поток только от 8 full-слоёв. Отсюда точный наклон: <code>∂bytes/∂S = 8 × (512 + 512) × 2 B = 16,384 B/позицию</code> (f16). Если бы все слои читали всю историю, наклон был бы 344,064 B/позицию — <b>×21 круче</b>. Sliding window здесь не оптимизация стиля, а амортизатор: он держит рост потока в узле.</li>
+</ul>
+<div class="note"><b class="tag">Проверка.</b> Fit E1 воспроизводит этот наклон с точностью ×1.00 (R²=0.998) — формула не «модельная гипотеза», а измеренный механизм: каждый новый токен истории навсегда добавляет ровно 16,384 байта к потоку каждого декод-токена.</div>
+</section>
+
+<section id="a3">
+<h2><span class="num">§3</span> Математика роста потока: центральная таблица Части II</h2>
+<p>Всё сводится к трём формулам — из них выводится вся остальная часть статьи:</p>
+<pre><code>bytes/token(S) = W + c_swa + S × 16,384        (f16 KV, S ≥ окна)
+
+tg_max(S)     = BW_eff ÷ bytes/token(S)
+KV_share(S)   = (c_swa + S×16,384) ÷ bytes/token(S)</code></pre>
+<div class="twrap">
+<table>
+<thead><tr><th>S, позиций</th><th class="num">Вклад KV в поток, B/токен</th><th class="num">bytes/token, GB</th><th class="num">Доля KV</th><th class="num">tg при BW=397.7 GB/s</th></tr></thead>
+<tbody>
+<tr><td>1k (окно)</td><td class="num">352,321,536</td><td class="num">7.09</td><td class="num">5.0%</td><td class="num">~56 т/с*</td></tr>
+<tr><td>16k</td><td class="num">603,979,776</td><td class="num">7.34</td><td class="num">8.2%</td><td class="num">~54 т/с*</td></tr>
+<tr><td>65k</td><td class="num">1,409,286,144</td><td class="num">8.14</td><td class="num">17.3%</td><td class="num">~49 т/с*</td></tr>
+<tr><td>131k</td><td class="num"><b>2,483,027,968 (2.31 GiB)</b></td><td class="num">9.22</td><td class="num">26.9%</td><td class="num">~43 т/с*</td></tr>
+<tr><td>262k</td><td class="num"><b>4,630,511,616 (4.31 GiB)</b></td><td class="num">11.36</td><td class="num">40.7%</td><td class="num">~35 т/с*</td></tr>
+</tbody>
+</table>
+</div>
+<p style="font-size:.85rem;color:var(--muted)">* Потолок BW-модели tg_max(S) = 397.7 GB/s ÷ bytes/token(S); реальные замеры (E1/E3) — на 10–25% ниже из-за накладных расходов ядра, но порядок и порог 20 т/с подтверждаются: измеренные tg 48.08@1k → 44.73@32k (CUDA E1), 34.8@131k (E3 v2).</p>
+<p>Чтение таблицы: при S=131k — «агентском» рабочем режиме — KV уже <b>26.9%</b> потока, но веса всё ещё доминируют; tg остаётся выше порога 20 т/с с большим запасом. К концу окна (262k) доля KV достигает 40.7%, и только сейчас KV становится сопоставимым фактором — при этом tg по BW-модели ~35 т/с, а измеренный Vulkan-anchor @262k = 27.47 т/с (E3 v3) всё ещё выше порога. Модель врёт оптимистично на 10–25%, но порядок верен — и именно поэтому ей можно доверять.</p>
+</section>
+
+<section id="a4">
+<h2><span class="num">§4</span> Таймлайн сессии: S(t) и измеренные tg-якоря</h2>
+<p>Дальше — реальная сессия. Стандартный агентский шаг добавляет в контекст ~2500 позиций (N_gen=1500 + n_new=1000). Открываю окно 262k с S₀≈4k — хватит на ~100 шагов. Измеренные якоря tg по глубине (f16, single-GPU):</p>
+<div class="twrap">
+<table>
+<thead><tr><th>S, позиций</th><th class="num">Шаг сессии (~)</th><th class="num">Измеренный tg, т/с</th><th>Источник</th></tr></thead>
+<tbody>
+<tr><td>4k (старт)</td><td class="num">1–2</td><td class="num"><b>47.82</b></td><td>E1 CUDA @4k</td></tr>
+<tr><td>32k</td><td class="num">~12</td><td class="num"><b>44.73</b></td><td>E1 CUDA @32k (−6.5% от старта)</td></tr>
+<tr><td>131k</td><td class="num">~51</td><td class="num"><b>34.8 / 34.82</b></td><td>E3 v2 CUDA SG / E3 v3 Vulkan SG</td></tr>
+<tr><td>262k (конец окна)</td><td class="num">~104</td><td class="num"><b>27.47</b></td><td>E3 v3 Vulkan SG</td></tr>
+</tbody>
+</table>
+</div>
+<p>Три наблюдения — и все они хорошие новости для агента:</p>
+<ol>
+<li><b>tg падает, но не уходит за порог.</b> Даже в конце окна 27.47 т/с — выше порога 20 из §0 с запасом 37%. Сессия на ~100 шагов остаётся интерактивной на всём протяжении.</li>
+<li><b>Внутри шага tg почти не меняется</b> (+0.09% за N_gen=512 при S=131k). llama.cpp учитывает растущую историю внутри генерации как sHistory = inputLen + (outputLen+1)/2 — эффект на скорость пренебрежим, реальный рост потока происходит прыжком между шагами.</li>
+<li><b>Цена длинного контекста линейна и мала</b>: 47.8 → 34.8 т/с от старта до 131k = −27%, при том что контекст вырос в ~32 раза. Без sliding window (наклон ×21) тот же рост дал бы падение tg на десятки процентов раньше.</li>
+</ol>
+</section>
+
+<section id="a5">
+<h2><span class="num">§5</span> Prefill O(S²): чем длиннее сессия, тем дороже каждый новый prefill</h2>
+<p>Prefill — второй зверь из §4 Части I. В начале сессии он дёшев, но у него квадратичный хвост: cold prefill (первый токен задачи) складывается из трёх частей:</p>
+<pre><code>FLOPs_cold(S) = GEMM: 2·P_gemm·S                    — линейно в S
+              + full-attn: O(S²), 8 слоёв           — квадратично, растёт с глубиной
+              + SWA: min(S, окно)·S                 — линейно после окна
+
+@S=131k (замер): 5,196,755,473,793,024 FLOP = GEMM 2.857e15
+                + full-attn O(S²) 2.252e15 [43%] + SWA 87.6e12</code></pre>
+<p>Для агента cold prefill бывает один раз на задачу; каждый шаг — инкрементальный prefill только n_new новых токенов, стоимость которого пропорциональна n_new × S (новые токены «видят» всю историю в full-слоях). Измеренный тренд pp по глубине (E2): 1435.59 → 1053.55 → 686.94 т/с от 65k до 262k.</p>
+<div class="note"><b class="tag">Честная оговорка по порогу ~1к.</b> Порог prefill «~1k т/с» (§0) выполняется с запасом до S ≈ 130–150k; в конце окна pp = 687 т/с — ниже порога. Цена этого для шага: n_new/pp растёт с 1.1 с до ~1.5 с при n_new=1000 — +0.4 с к шагу, который и так занимает 33–40 с генерации. Порог prefill важен для wall-clock задачи, а не как жёсткий лимит: gen/prefill ≈ 30× делает его вторичным.</div>
+</section>
+
+<section id="a6">
+<h2><span class="num">§6</span> VRAM в окне и S*: память не догонит контекст</h2>
+<p>В §3 Части I показано: 262k f16 влазит на одну карту. Теперь — полная картина по глубине, включая то, где начинается давление:</p>
+<div class="twrap">
+<table>
+<thead><tr><th>Компонент</th><th class="num">@4k</th><th class="num">@32k</th><th class="num">@131k f16</th><th class="num">@262k f16</th></tr></thead>
+<tbody>
+<tr><td>Веса (константа)</td><td class="num">~7.4 GB</td><td class="num">~7.4 GB</td><td class="num">~7.4 GB</td><td class="num">~7.4 GB</td></tr>
+<tr><td>KV-кэш (f16)</td><td class="num">0.38 GiB</td><td class="num">0.81 GiB</td><td class="num"><b>2.31 GiB</b></td><td class="num"><b>4.31 GiB</b></td></tr>
+<tr><td>Итого на карту (SG, без overhead)</td><td class="num">~7.8 GB</td><td class="num">~8.2 GB</td><td class="num"><b>~9.7 GiB</b></td><td class="num"><b>~11.7 GiB</b></td></tr>
+</tbody>
+</table>
+</div>
+<p>Прирост VRAM — те же 16,384 B/позицию из §a2: контекст платит за себя дважды — памятью и шиной одновременно. То, что однажды записалось в кэш, потом читается каждым decode-токеном до конца сессии.</p>
+<p><b>KV-квантование здесь — та же история, что в E1, только длиннее.</b> q8_0 режет и наклон, и константу вдвое (KV @262k = 2,315,255,808 B), но при S ≤ 32k это чистый минус — эффективная цена позиции ×3.48 / ×5.86 (C-12). На длинных контекстах минус не исчезает: tg ratio q8/f16 = 0.771 @131k и 0.671 @262k даже в PP (C-19) — dequant-налог растёт вместе с историей, а экономия байт — нет.</p>
+<p><b>А есть ли вообще запас?</b> Формула VRAM из калькулятора: <code>total = weights + (kv+act)·batch/dp + overhead(1 GiB)</code>, steady-state seqLen = inputLen + ⌈outputLen/2⌉. 16 GB хватает для f16 KV до ~200k контекста с запасом на CUDA-контекст и активации — ограничение по памяти наступает позже, чем ограничение по скорости.</p>
+<h3>Окно загрузки — рычаг до первого токена (<code>--ctx-size</code>)</h3>
+<p>Таблица выше считает VRAM по фактической истории S. Но при загрузке llama.cpp резервирует KV-кэш <b>под всё финальное окно сразу</b>, а не под то, что реально допишется: <code>--ctx-size 262144</code> = 4.31 GiB занято с первой секунды, даже если сессия упрётся в 30k (gemma-4 f16; q8_0 — вдвое меньше). И это рычаг, который работает ещё до первого токена: если уменьшить финальное окно при подгрузке модели, ускорится и сама загрузка (меньше буферы и графы), и инференс — освобождённый VRAM держит всё на GPU без спилла в RAM и тихого partial-offload'а.</p>
+<p>Контрпример уже есть в статье: Qwopus 27B @262k с f16 KV — резерв не влезает, tg коллапсирует до <b>0.74</b> (§5.5). Для полного окна есть три выхода — квантовать KV (q4_0: reallocs=0, tg 10.02), параллелизм или <b>уменьшить финальное окно до того, что реально нужно сессии</b>. Последний — самый недооценённый: если задача живёт в 64–131k, окно 262k просто держит VRAM занятым впустую.</p>
+<div class="note"><b class="tag">Честная граница.</b> Математика внимания (§a5) зависит от фактической истории S, а не от зарезервированного окна: холодный prefill того же промпта при <code>-c 131072</code> и <code>-c 262144</code> — те же FLOPs (5.2e15 @131k). «Ускорение префила» от уменьшения окна идёт через fit-механизм (оффлоад-эвристика держит всё на GPU) и время загрузки, а не через меньшее число операций; если модель влезает при обоих окнах — вычислительно разницы нет.</div>
+<p>Торг простой: окно должно покрывать ожидаемую историю сессии (append-only, §a1), а компакция (блок S* ниже) держит фактический S маленьким внутри неё. Окно загрузки — рычаг до сессии; компакция — рычаг в её середине.</p>
+<h3>S* ≈ 411,600: где бы KV догнал веса</h3>
+<p>Пересечение «чтение KV догоняет чтение весов»: S* = W ÷ kv_slope ≈ <b>411,600 токенов</b> (f16 KV / Q4_K_M) — за пределами нативного окна gemma-4 (262,144). Четыре следствия:</p>
+<ol>
+<li><b>В рабочем диапазоне decode weight-bound.</b> Даже при полном окне веса дают 59% чтений по шине (@262k f16). «Длинный контекст душит скорость» — правда, но механизм вторичен относительно весов.</li>
+<li><b>Эффект KV измерим далеко до S*:</b> fit E1 ловит линейный рост уже от ~16k позиций (C-15); доля KV 27% @131k, 41% @262k — видно в центральной таблице §a3.</li>
+<li><b>Компакция контекста — единственный «рычаг» скорости в агентском цикле.</b> Сжатие окна с S до S' возвращает поток на Δ = (S−S')×16,384 B/токен: компакция 200k → 50k — это ≈2.46 GB меньше чтений на каждый токен — по BW-модели +31% tg. Ни prefill, ни decode этот рычаг не дают.</li>
+<li><b>Гибридное внимание gemma-4 — готовая амортизация:</b> 83% слоёв (SWA) не растут с S вовсе; наклон задаёт только восьмёрка глобальных. Без оконного внимания тот же контекст душил бы поток в 21 раз круче (§a2).</li>
+</ol>
+<p><b>Проверка байт-модели на второй архитектуре (E4).</b> Всё выше про gemma-4, а работает ли формула, когда архитектура другая? Да: KV qwen35 = 17 full-слоёв × kv_heads=4 × head_dim 256 × 2(K+V) × 2 B ≈ <b>69,632 B/позицию</b> → @262k ≈ 18.3 GB суммарно — байт-модель предсказала коллапс f16-KV до запуска: при PP это ≈8.5 GiB на карту плюс веса — не влазит, tg обваливается до 0.74; q4_0 KV режет вдвое — и только он даёт чистый прогон полного окна (reallocs=0, tg 10.02). Предсказание совпало с замером (§5.5).</p>
+<p>Итог Части II по памяти: <b>агент никогда не упрётся в VRAM раньше, чем в окно контекста</b>. Ограничение — логическое (контекст), а не физическое (память). И это хорошая новость: пока окно 128k+, карта свободна для того, что действительно решает скорость.</p>
+</section>
+<div class="verdict"><h3>Вердикт Части II</h3><p>Поток данных в агентской сессии — ступенчатая функция времени: скачок на каждом prefill + медленный линейный дрейф внутри decode (+16,384 B/позицию f16). Веса — постоянная база 6.73 GB; KV-рост — линейная надстройка с пересечением S* ≈ 412k, которого окно gemma-4 физически не достигает. На этом сетапе сессия на ~100 шагов остаётся интерактивной от старта до конца окна (tg 47.8 → 34.8 → 27.5 т/с — все выше порога 20 из §0), prefill O(S²) вторичен при gen/prefill ≈ 50×, а единственный рычаг скорости — компакция контекста (+31% tg за 200k→50k). <b>Агентский контур на 2× RTX 5060 Ti работает. Осталось проверить цену.</b></p></div>
+<div class="verdict"><h3>Вердикт Части II</h3><p>Поток данных в агентской сессии — ступенчатая функция времени: скачок на каждом prefill + медленный линейный дрейф внутри decode (+16,384 B/позицию f16). Веса — постоянная база 6.73 GB; KV-рост — линейная надстройка с пересечением S* ≈ 412k, которого окно gemma-4 физически не достигает. На этом сетапе сессия на ~100 шагов остаётся интерактивной от старта до конца окна (tg 47.8 → 34.8 → 27.5 т/с — все выше порога 20 из §0), prefill O(S²) вторичен при gen/prefill ≈ 50×, а единственный рычаг скорости — компакция контекста (+31% tg за 200k→50k). <b>Агентский контур на 2× RTX 5060 Ti работает. Осталось проверить цену.</b></p></div>
+<div class="part-banner" id="p3"><span class="pn">Заключение</span><h2>Миф «запустил — работает» и цена агентского сетапа</h2></div>
+<div class="part-banner" id="p3"><span class="pn">Заключение</span><h2>Миф «запустил — работает» и цена агентского сетапа</h2></div>
+<section id="myth">
+<h2>Миф «запустил большую модель — работает»: prefill 10 / генерация 13</h2>
+<div class="myth-box"><p class="quote">«Запустил большую модель, получил prefill 10 / генерация 13 — и это работает.»</p><p style="margin-bottom:0;font-size:.95rem;color:#4a4e55">Звучит как компромисс. На деле — три разные проблемы, замаскированные под одну:</p></div>
+<div class="myth-box"><p class="quote">«Запустил большую модель, получил prefill 10 / генерация 13 — и это работает.»</p><p style="margin-bottom:0;font-size:.95rem;color:#4a4e55">Звучит как компромисс. На деле — три разные проблемы, замаскированные под одну:</p></div>
+<li><b>Время.</b> Шаг = N_gen/tg + n_new/pp = 1500/13 + 1000/10 ≈ 115 с + 100 с = <b>215 с</b>. Задача из 20 шагов — ~72 минуты, и это ещё до того, как агент забудет контекст. На этом сетапе тот же шаг — 49 секунд.</li>
+<li><b>Размер модели — не аргумент.</b> Потолок tg = W ÷ BW_eff: большая модель на той же шине означает больше байт на токен, т.е. медленнее. «Триллион параметров» на CPU-offload/DDR5 (30–70 GB/s) просто стримится дольше — это и есть тот самый tg 13 (§2), а не заслуга контекста или модели.</li>
+<li><b>Размер модели — не аргумент.</b> Потолок tg = W ÷ BW_eff: большая модель на той же шине означает больше байт на токен, т.е. медленнее. «Триллион параметров» на CPU-offload/DDR5 (30–70 GB/s) просто стримится дольше — это и есть тот самый tg 13 (§2), а не заслуга контекста или модели.</li>
+<li><b>Двойная цена prefill.</b> gen/prefill = 1.2× значит, что генерация перестала доминировать: каждый шаг платит минуту за prefill, который на этом сетапе стоит ~1 секунду. А контекст ниже 128k — агент через 3–4 шага перестаёт помнить задачу (§0).</li>
+<p>Вторая половина мифа добрее и опаснее: «большая модель интересна, чтобы разобраться, как её запускать, но не более». Разбираться — действительно полезно: на Qwopus 27B поймана exit=0-ловушка тихого partial-offload'а (§5.5), переписан mirror-KV патч под новую архитектуру — и формула W ÷ BW_eff предсказала коллапсы до запуска. Но «но не более» — это цена вопроса: 7.71 т/с на одной карте — это демо, а не агент.</p>
+<p>Вторая половина мифа добрее и опаснее: «большая модель интересна, чтобы разобраться, как её запускать, но не более». Разбираться — действительно полезно: на Qwopus 27B поймана exit=0-ловушка тихого partial-offload'а (§5.5), переписан mirror-KV патч под новую архитектуру — и формула W ÷ BW_eff предсказала коллапсы до запуска. Но «но не более» — это цена вопроса: 7.71 т/с на одной карте — это демо, а не агент.</p>
+<p>Через всю статью шли три мысли, и здесь они сходятся: <b>параллелизм нужен, когда модель не влазит в одну карту — и тогда он полезен</b> (E4); <b>дорого ≠ лучше</b> (KV-кванты C-12, «триллионные» мифы, Spark ниже); <b>понимание того, как это работает</b>, проверяется графиками и экспериментами — байт-модель предсказала каждый коллапс до запуска. Остался последний вопрос: что если купить готовое железо?</p>
+</section>
+<section id="spark">
+<h2>Сетап против NVIDIA DGX Spark: дорого ≠ лучше — в цифрах</h2>
+<p>Вопрос «а что если купить готовое железо?» решается не на словах. Обе системы прогнаны через один и тот же инструмент (llm-inference-calculator, режим «ideal upper bound») с одной и той же ~27B моделью в FP4 и инпутом ~130k — чтобы сравнивать железо, а не модели:</p>
+<p>Вопрос «а что если купить готовое железо?» решается не на словах. Обе системы прогнаны через один и тот же инструмент (llm-inference-calculator, режим «ideal upper bound») с одной и той же ~27B моделью в FP4 и инпутом ~130k — чтобы сравнивать железо, а не модели:</p>
+  <div class="stat win"><div class="v">≈31 т/с</div><div class="l">на поток · этот сетап (TP=2, TPOT 31.9 ms)</div></div>
+  <div class="stat win"><div class="v">≈31 т/с</div><div class="l">на поток · этот сетап (TP=2, TPOT 31.9 ms)</div></div>
+  <div class="stat lose"><div class="v">≈9.5 т/с</div><div class="l">на тот же поток · Spark (TPOT 104.8 ms)</div></div>
+  <div class="stat win"><div class="v">≈49 с</div><div class="l">агентский шаг · этот сетап</div></div>
+  <div class="stat lose"><div class="v">≈160 с</div><div class="l">агентский шаг · Spark</div></div>
+<div class="twrap">
+<div class="twrap">
+<thead><tr><th>Метрика (одна ~27B модель, FP4, инпут ~130k)</th><th class="num">ПК: 2× RTX 5060 Ti (~300к ₽)</th><th class="num">NVIDIA DGX Spark (~900+к ₽)</th></tr></thead>
+<thead><tr><th>Метрика (одна ~27B модель, FP4, инпут ~130k)</th><th class="num">ПК: 2× RTX 5060 Ti (~300к ₽)</th><th class="num">NVIDIA DGX Spark (~900+к ₽)</th></tr></thead>
+<tr><td>Генерация на поток (batch=1), т/с</td><td class="num" style="color:var(--ok)"><b>≈31</b> (TPOT 31.9 ms)</td><td class="num" style="color:var(--bad)">≈9.5 (TPOT 104.8 ms)</td></tr>
+<tr><td>Генерация на поток (batch=1), т/с</td><td class="num" style="color:var(--ok)"><b>≈31</b> (TPOT 31.9 ms)</td><td class="num" style="color:var(--bad)">≈9.5 (TPOT 104.8 ms)</td></tr>
+<tr><td>Prefill, т/с</td><td class="num">~1,100 (TTFT ≈2 мин)</td><td class="num"><b>≈5,700</b> (TTFT 22.8 с) — единственный честный выигрыш Spark</td></tr>
+<tr><td>Макс. batch → системная decode</td><td class="num">3 потока → <b>≈45 т/с</b> системой</td><td class="num">27 потоков → ≈50 т/с в идеале (~2 т/с на поток при полном batch — KV всех потоков съедает шину)</td></tr>
+<tr><td>Макс. batch → системная decode</td><td class="num">3 потока → <b>≈45 т/с</b> системой</td><td class="num">27 потоков → ≈50 т/с в идеале (~2 т/с на поток при полном batch — KV всех потоков съедает шину)</td></tr>
+<tr><td>Задача из 20 шагов</td><td class="num" style="color:var(--ok)"><b>≈16 мин</b></td><td class="num" style="color:var(--bad)">≈53 мин</td></tr>
+<tr><td>Задача из 20 шагов</td><td class="num" style="color:var(--ok)"><b>≈16 мин</b></td><td class="num" style="color:var(--bad)">≈53 мин</td></tr>
+</tbody>
+</table>
+<p>Честное чтение таблицы. Физика простая: у Spark одна единая LPDDR-шина на ~150 GB/s эффективных, у ПК — два GDDR7-шарда по ~400 GB/s spec (BW_eff ≈246 GB/s/карту при TP=2), и веса в ~13.5 GB стримятся целиком каждый шаг. Prefill 5.7k т/с Spark экономит доли секунды каждого шага — n_new/pp = 0.2 с против 0.9 с на этом ПК, а генерация 9.5 т/с проигрывает ~2 минуты на каждом из тех же шагов. Разница цены в 600+к ₽ покупает конкурентность — батч-сервинг нескольких агентов сразу (≈45–50 т/с системой у обоих), а не скорость отдельного агента.</p>
+<div class="verdict"><h3>Вердикт статьи</h3><p>Вопрос из первого абзаца — «две RTX 5060 Ti за ~300к ₽ потянут ли агента?» — ответ: <b>да, примерно втрое быстрее Spark (~16 против ~53 минут на задачу из 20 шагов)</b>. Три мысли, которые вели статью, в финале: (1) <b>параллелизм нужен, когда модель не влазит в одну карту — и тогда он полезен</b>: PP сделал Qwopus 27B рабочим (22.14 против ловушки 7.71 т/с), TS +68%, с MTP до 54 т/с при tg_3; (2) <b>дорого ≠ лучше</b>: Spark втрое дороже и втрое медленнее на поток, KV-кванты — минус (C-12), «триллионные модели» — миф (§myth); (3) <b>понимание того, как это работает</b>, проверяется графиками и экспериментами: байт-модель W ÷ BW_eff предсказала каждый коллапс до запуска — S* для gemma-4, f16-KV @262k для Qwopus, dequant-налог q8/q4. Агентский сетап — это не «огромная модель на старом железе», а генерация ≥20 т/с + контекст ≥128k + шина, по которой всё это стримится.</p></div>
+<div class="verdict"><h3>Вердикт статьи</h3><p>Вопрос из первого абзаца — «две RTX 5060 Ti за ~300к ₽ потянут ли агента?» — ответ: <b>да, примерно втрое быстрее Spark (~16 против ~53 минут на задачу из 20 шагов)</b>. Три мысли, которые вели статью, в финале: (1) <b>параллелизм нужен, когда модель не влазит в одну карту — и тогда он полезен</b>: PP сделал Qwopus 27B рабочим (22.14 против ловушки 7.71 т/с), TS +68%, с MTP до 54 т/с при tg_3; (2) <b>дорого ≠ лучше</b>: Spark втрое дороже и втрое медленнее на поток, KV-кванты — минус (C-12), «триллионные модели» — миф (§myth); (3) <b>понимание того, как это работает</b>, проверяется графиками и экспериментами: байт-модель W ÷ BW_eff предсказала каждый коллапс до запуска — S* для gemma-4, f16-KV @262k для Qwopus, dequant-налог q8/q4. Агентский сетап — это не «огромная модель на старом железе», а генерация ≥20 т/с + контекст ≥128k + шина, по которой всё это стримится.</p></div>
+</section>
+<section id="appendix">
+<h2>Приложение: формулы и пакет</h2>
+<pre><code># Рост потока данных (gemma-4, f16 KV), S ≥ окна SWA (1024)
+<pre><code># Рост потока данных (gemma-4, f16 KV), S ≥ окна SWA (1024)
+W                = 6,733,551,580 B        # P_gemm × 0.61776 (Q4_K_M)
+c_swa            = 335,544,320 B          # 1024 × 40 слоёв × 4096 elem × 2 B — константа
+c_swa            = 335,544,320 B          # 1024 × 40 слоёв × 4096 elem × 2 B — константа
+KV(S)            = c_swa + S·16,384       # @131k: 2,483,027,968 B; @262k: 4,630,511,616 B
+KV(S)            = c_swa + S·16,384       # @131k: 2,483,027,968 B; @262k: 4,630,511,616 B
+# Prefill (compute-bound)
+FLOPs_prefill    = n_new·flopsPerToken + attentionQuad(n_new, S_история)
+FLOPs_attn(холодный S) = 4·qDim·(G·S² + L·S·окно); инкрементальный ≈ O(n_new·S)   # C-13
+FLOPs_attn(холодный S) = 4·qDim·(G·S² + L·S·окно); инкрементальный ≈ O(n_new·S)   # C-13
+# Decode (memory-bound)
+TPS_max          = BW_eff / bytes/token(S); AI ≈ 3.2 FLOP/B → memory-bound (C-01/C-02)
+TPS_max          = BW_eff / bytes/token(S); AI ≈ 3.2 FLOP/B → memory-bound (C-01/C-02)
+sHistory         = inputLen + (outputLen+1)/2     # средняя история по витку
+# VRAM и пересечение
+ΔVRAM/позицию    = +16,384 B f16            # те же байты — в записи и в будущих чтениях
+S*               ≈ 411,600 токенов          # KV догоняет веса; &gt; контекста gemma-4 (C-06/C-15)</code></pre>
+S*               ≈ 411,600 токенов          # KV догоняет веса; &gt; контекста gemma-4 (C-06/C-15)</code></pre>
+  <a href="code/inference_math.py"><div class="p">code/inference_math.py</div><div class="d">Ядро байт-модели: bytes/token(S), KV, S*, шина TS/PP, prefill FLOPs + тесты 25/25 (ручной пересчёт и пины замеров)</div></a>
+  <a href="code/launchers/run_e1.bat"><div class="p">code/launchers/run_e1…e4.bat</div><div class="d">Ручные лаунчеры всех экспериментов (E1–E4 + run_e4_q4.bat): префлохты A–D, self-explanatory aborts; GPU-прогоны — только вручную</div></a>
+  <a href="code/mirror-kv-patch.md"><div class="p">mirror-kv-patch.md + drafts/</div><div class="d">Патч mirror-KV (~20 строк, снял assert C-17) и стилистический анализ речи пользователя, на которой написана статья (dialogue-style-analysis.md)</div></a>
+  <a href="code/mirror-kv-patch.md"><div class="p">mirror-kv-patch.md + drafts/</div><div class="d">Патч mirror-KV (~20 строк, снял assert C-17) и стилистический анализ речи пользователя, на которой написана статья (dialogue-style-analysis.md)</div></a>
+<div class="note"><b class="tag">Методология.</b> Каждый эксперимент оформлен ровно в 5 файлов: конфиг, сырые данные, таблица, график, вывод. Вывод фиксируется только после пройденного замера — C-01…C-21 со ссылками на доказательства. Ловушки, пойманные по дороге: llama-bench комбо-строка меряет prefill вместо decode (C-16), exit=0 при тихом partial-offload'е (§5.5) — и главная: байт-модель как инструмент предсказания, а не только объяснения. Она предсказала коллапсы до запуска.</div>
+<div class="note"><b class="tag">Методология.</b> Каждый эксперимент оформлен ровно в 5 файлов: конфиг, сырые данные, таблица, график, вывод. Вывод фиксируется только после пройденного замера — C-01…C-21 со ссылками на доказательства. Ловушки, пойманные по дороге: llama-bench комбо-строка меряет prefill вместо decode (C-16), exit=0 при тихом partial-offload'е (§5.5) — и главная: байт-модель как инструмент предсказания, а не только объяснения. Она предсказала коллапсы до запуска.</div>
+</section>
+<footer><span>The Anatomy of Inference · пре-принт 2026-11-12</span><span>Данные: C-01…C-21, E1–E4 · G:\uni\AoI</span></footer>
+<footer><span>The Anatomy of Inference · пре-принт 2026-11-12</span><span>Данные: C-01…C-21, E1–E4 · G:\uni\AoI</span></footer>
+</main>
+</div>
+</body>
+</body>
+</html>
+

@@ -1,0 +1,35 @@
+0.00.104.810 I llama_completion: llama backend init
+0.00.104.816 I llama_completion: load the model and apply lora adapter, if any
+0.00.991.525 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.00.991.579 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.01.054.536 W load: '</s>' is a normal token here, removing it from EOG list
+0.04.083.862 I cmn          init: llama threadpool init, n_threads = 8
+0.04.254.986 I 
+0.04.255.023 I system_info: n_threads = 8 (n_threads_batch = 8) / 16 | CUDA : ARCHS = 750,800,860,890,900,1200,1210 | USE_GRAPHS = 1 | FA_QUANTS = q4_0-q4_0,q8_0-q8_0,f16-f16,bf16-bf16 | BLACKWELL_NATIVE_FP4 = 1 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 | 
+0.04.255.024 I 
+0.04.255.855 I sampler seed: 1470659643
+0.04.255.869 I sampler params: 
+	repeat_last_n = 64, repeat_penalty = 1.000, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 64, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 1.000
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.04.255.883 I sampler chain: logits -> logit-bias -> ?penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> ?temp-ext -> dist 
+0.04.255.884 I generate: n_ctx = 768, n_batch = 2048, n_predict = 64, n_keep = 1
+0.04.255.885 I 
+ lazy dog.
+\begin{enumerate}
+\end{enumerate}
+<|channel>thought
+<channel|>It appears your input contains a repetitive phrase regarding the "memory bus of a large language model" and a few unrelated sentences.
+
+If you are asking for a technical explanation regarding the **memory bandwidth (bus)** of Large
+
+0.05.995.214 I common_perf_print:    sampling time =      29.61 ms
+0.05.995.216 I common_perf_print:    samplers time =      12.83 ms /   576 tokens
+0.05.995.217 I common_perf_print:        load time =    3463.05 ms
+0.05.995.220 I common_perf_print: prompt eval time =     278.58 ms /   512 tokens (    0.54 ms per token,  1837.91 tokens per second)
+0.05.995.222 I common_perf_print:        eval time =    1428.39 ms /    63 runs   (   22.67 ms per token,    44.11 tokens per second)
+0.05.995.223 I common_perf_print:       total time =    1740.23 ms /   575 tokens
+0.05.995.224 I common_perf_print: unaccounted time =       3.65 ms /   0.2 %      (total - sampling - prompt eval - eval) / (total)
+0.05.995.225 I common_perf_print:    graphs reused =         62
+0.05.995.226 I common_perf_print:   graph reallocs =          0    /     0        (same size) / (changed size)
