@@ -2,8 +2,16 @@
 
 Experiment code and data for E1–E4: KV cache, quantization, prefill/decode on long context, multi-GPU tensor splitting (2× RTX 5060 Ti). The article is published separately; this repo holds the measurement pipeline behind it.
 
-- **Article:** link pending
-- **Repository:** https://github.com/xmillogx-cmd/The-Anatomy-of-Inference-in-Agentic-Systems
+## Article — [nonndazone.ru](https://nonndazone.ru)
+
+Published in four languages for your convenience:
+
+- **RU** — https://nonndazone.ru/article/anatomiya-inferensa-v-agentskih-sistemah
+- **EN** — https://nonndazone.ru/article/the-anatomy-of-inference-in-agentic-systems
+- **ZH** — https://nonndazone.ru/article/%E6%99%BA%E8%83%BD%E4%BD%93%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%8E%A8%E7%90%86%E8%A7%A3%E5%89%92
+- **DE** — https://nonndazone.ru/article/anatomie-des-inferencing-in-agentischen-systemen
+
+Repository: [xmillogx-cmd/The-Anatomy-of-Inference-in-Agentic-Systems](https://github.com/xmillogx-cmd/The-Anatomy-of-Inference-in-Agentic-Systems)
 
 ## Layout
 
