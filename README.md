@@ -11,6 +11,8 @@ Published in four languages for your convenience:
 - **ZH** — https://nonndazone.ru/article/%E6%99%BA%E8%83%BD%E4%BD%93%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%8E%A8%E7%90%86%E8%A7%A3%E5%89%92
 - **DE** — https://nonndazone.ru/article/anatomie-des-inferencing-in-agentischen-systemen
 
+Preprint (Zenodo): [DOI 10.5281/zenodo.24245959](https://doi.org/10.5281/zenodo.24245959)
+
 Repository: [xmillogx-cmd/The-Anatomy-of-Inference-in-Agentic-Systems](https://github.com/xmillogx-cmd/The-Anatomy-of-Inference-in-Agentic-Systems)
 
 ## Layout
